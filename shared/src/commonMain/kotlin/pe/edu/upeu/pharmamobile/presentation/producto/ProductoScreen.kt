@@ -1,4 +1,4 @@
-package pe.edu.upeu.pharmamobile.presentation.producto
+package pe.edu.upeu.pharmamobil.presentation.producto
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -6,70 +6,72 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+// 1. Definición del Modelo de Datos del Producto
+data class Producto(
+    val nombre: String,
+    val precio: Double,
+    val stock: Int
+)
 
 @Composable
 fun ProductoScreen() {
 
-    var nombre by remember {
-        mutableStateOf("")
+    // 2. Declaración de Estados de Entrada
+    var nombre by remember { mutableStateOf("") }
+    var precio by remember { mutableStateOf("") }
+    var stock by remember { mutableStateOf("") }
+
+    // 3. Control de Intento de Registro (Evita mostrar errores antes de presionar "Registrar")
+    var intentoRegistrar by remember { mutableStateOf(false) }
+
+    // 4. Estados de Mensajes y Objeto Guardado
+    var mensajeExito by remember { mutableStateOf<String?>(null) }
+    var productoRegistrado by remember { mutableStateOf<Producto?>(null) }
+
+    // 5. Lógica de Conversión Segura y Validación Regla por Regla
+    val nombreValido = nombre.isNotBlank()
+
+    val precioDouble = precio.toDoubleOrNull()
+    val precioValido = precioDouble != null && precioDouble > 0.0
+
+    val stockInt = stock.toIntOrNull()
+    val stockValido = stockInt != null && stockInt >= 0
+
+    // Determinación de Mensajes de Error Específicos
+    val nombreError = when {
+        !intentoRegistrar -> null
+        nombre.isBlank() -> "El nombre es obligatorio."
+        else -> null
     }
 
-    var precio by remember {
-        mutableStateOf("")
+    val precioError = when {
+        !intentoRegistrar -> null
+        precio.isBlank() -> "Ingrese un precio numérico."
+        precioDouble == null -> "Ingrese un precio numérico."
+        precioDouble <= 0.0 -> "El precio debe ser mayor que cero."
+        else -> null
     }
 
-    var stock by remember {
-        mutableStateOf("")
+    val stockError = when {
+        !intentoRegistrar -> null
+        stock.isBlank() -> "Ingrese un stock entero."
+        stockInt == null -> "Ingrese un stock entero."
+        stockInt < 0 -> "El stock no puede ser negativo."
+        else -> null
     }
 
-    var nombreError by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    var precioError by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    var stockError by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    var mensajeExito by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    fun validar(): Boolean {
-        nombreError = if (nombre.isBlank()) "El nombre es obligatorio" else null
-
-        val precioValor = precio.toDoubleOrNull()
-        precioError = when {
-            precio.isBlank() -> "El precio es obligatorio"
-            precioValor == null -> "El precio debe ser un número válido"
-            precioValor <= 0 -> "El precio debe ser mayor a 0"
-            else -> null
-        }
-
-        val stockValor = stock.toIntOrNull()
-        stockError = when {
-            stock.isBlank() -> "El stock es obligatorio"
-            stockValor == null -> "El stock debe ser un número entero"
-            stockValor < 0 -> "El stock no puede ser negativo"
-            else -> null
-        }
-
-        return nombreError == null && precioError == null && stockError == null
-    }
-
+    // 6. UI Declarativa en Compose
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -77,56 +79,75 @@ fun ProductoScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        Text("PharmaMobil")
-        Text("Registro de Producto")
+        Text(
+            text = "PharmaMobil",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Text(
+            text = "Registro de Producto",
+            style = MaterialTheme.typography.titleMedium
+        )
 
+        // Campo Nombre
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
-            label = {
-                Text("Nombre")
-            },
+            label = { Text("Nombre") },
             isError = nombreError != null,
             supportingText = {
-                nombreError?.let { Text(it) }
+                nombreError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             },
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Campo Precio
         OutlinedTextField(
             value = precio,
             onValueChange = { precio = it },
-            label = {
-                Text("Precio")
-            },
+            label = { Text("Precio") },
             isError = precioError != null,
             supportingText = {
-                precioError?.let { Text(it) }
+                precioError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             },
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Campo Stock
         OutlinedTextField(
             value = stock,
             onValueChange = { stock = it },
-            label = {
-                Text("Stock")
-            },
+            label = { Text("Stock") },
             isError = stockError != null,
             supportingText = {
-                stockError?.let { Text(it) }
+                stockError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             },
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Botón Registrar
         Button(
             onClick = {
+                intentoRegistrar = true
                 mensajeExito = null
-                if (validar()) {
-                    mensajeExito = "Producto \"$nombre\" registrado correctamente"
+
+                // Se valida que todos los criterios sean exitosos
+                if (nombreValido && precioValido && stockValido && precioDouble != null && stockInt != null) {
+
+                    // Instanciación del Objeto Producto
+                    val nuevoProducto = Producto(
+                        nombre = nombre.trim(),
+                        precio = precioDouble,
+                        stock = stockInt
+                    )
+
+                    productoRegistrado = nuevoProducto
+                    mensajeExito = "¡Éxito! Producto \"${nuevoProducto.nombre}\" (S/ ${nuevoProducto.precio}, Stock: ${nuevoProducto.stock}) registrado correctamente."
+
+                    // Limpieza del Formulario
                     nombre = ""
                     precio = ""
                     stock = ""
+                    intentoRegistrar = false
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -134,8 +155,13 @@ fun ProductoScreen() {
             Text("Registrar")
         }
 
+        // Retroalimentación de Éxito
         mensajeExito?.let {
-            Text(it)
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
     }
 }
