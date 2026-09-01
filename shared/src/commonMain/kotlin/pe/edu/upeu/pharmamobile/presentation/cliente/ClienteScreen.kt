@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import pe.edu.upeu.pharmamobile.presentation.components.ValidatedTextField
 
 @Composable
 fun ClienteScreen() {
@@ -65,42 +65,27 @@ fun ClienteScreen() {
         Text("PharmaMobil")
         Text("Registro de Cliente")
 
-        OutlinedTextField(
+        ValidatedTextField(
             value = nombre,
             onValueChange = { nombre = it },
-            label = {
-                Text("Nombre")
-            },
-            isError = nombreError != null,
-            supportingText = {
-                nombreError?.let { Text(it) }
-            },
+            label = "Nombre",
+            error = nombreError,
             modifier = Modifier.fillMaxWidth()
         )
 
-        OutlinedTextField(
+        ValidatedTextField(
             value = correo,
             onValueChange = { correo = it },
-            label = {
-                Text("Correo")
-            },
-            isError = correoError != null,
-            supportingText = {
-                correoError?.let { Text(it) }
-            },
+            label = "Correo",
+            error = correoError,
             modifier = Modifier.fillMaxWidth()
         )
 
-        OutlinedTextField(
+        ValidatedTextField(
             value = telefono,
             onValueChange = { telefono = it },
-            label = {
-                Text("Teléfono (opcional)")
-            },
-            isError = telefonoError != null,
-            supportingText = {
-                telefonoError?.let { Text(it) }
-            },
+            label = "Teléfono (opcional)",
+            error = telefonoError,
             modifier = Modifier.fillMaxWidth()
         )
 
