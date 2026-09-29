@@ -4,7 +4,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import pe.edu.upeu.pharmamobil.domain.model.Categoria
 
-// DTO para recibir la respuesta del backend (CategoriaResponseDTO)
 @Serializable
 data class CategoriaResponseDto(
     @SerialName("id") val id: Long? = null,
@@ -15,7 +14,6 @@ data class CategoriaResponseDto(
     @SerialName("fechaModificacion") val fechaModificacion: String? = null
 )
 
-// DTO para enviar peticiones al backend (CategoriaRequestDTO)
 @Serializable
 data class CategoriaRequestDto(
     @SerialName("nombre") val nombre: String,

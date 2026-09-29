@@ -1,11 +1,28 @@
-# PharmaMobil - Módulo de Categorías (Ktor Client REST)
+# PharmaMobil - Aplicación Móvil Multiplataforma (KMP)
 
-## Configuración de Conexión
-- **URL Base (Emulador Android):** `http://10.0.2.2:8080/`
-- **Endpoint consumido:** `/api/v1/categorias`
-- **Método HTTP:** `GET`
+## Módulo de Categorías - Conectividad REST
 
-## Estructura del DTO (CategoriaResponseDto)
+### 1. Configuración de Conexión HTTP
+- **API Backend:** Spring Boot 4.0.7 con Oracle DB
+- **URL Base (Emulador Android):** `http://10.0.2.2:8080/api/v1`
+- **URL Base (Simulador iOS / Desktop):** `http://localhost:8080/api/v1`
+- **Cliente HTTP:** Ktor Client 3.0+
+- **Motor de Red (Engine):** OkHttp (Android), Darwin (iOS)
+
+---
+
+### 2. Catálogo de Endpoints de Categorías
+| Método | Ruta | Parámetros | Respuesta esperada | Códigos de error |
+|---|---|---|---|---|
+| **GET** | `/categorias` | `limit`, `offset` (query) | 200 OK (Lista de categorías) | 500 |
+| **GET** | `/categorias/{id}` | `id` (Path) | 200 OK (Objeto categoría) | 400, 404 |
+| **POST** | `/categorias` | Body JSON | 201 Created (Categoría creada) | 400, 401 |
+| **PUT** | `/categorias/{id}` | `id` (Path) + Body JSON | 200 OK (Categoría actualizada) | 400, 404 |
+| **DELETE**| `/categorias/{id}` | `id` (Path) | 200 OK / 204 No Content | 401, 404 |
+
+---
+
+### 3. Estructura del DTO (`CategoriaResponseDto`)
 ```kotlin
 @Serializable
 data class CategoriaResponseDto(
