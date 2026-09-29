@@ -18,10 +18,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * viewModelScope corre sobre Dispatchers.Main, que en una prueba no existe:
- * setMain lo sustituye por un dispatcher de prueba antes de cada caso.
- */
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProductoViewModelTest {
 

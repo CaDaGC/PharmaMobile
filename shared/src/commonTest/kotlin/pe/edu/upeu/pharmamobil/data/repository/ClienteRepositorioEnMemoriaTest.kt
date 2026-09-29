@@ -1,6 +1,7 @@
 package pe.edu.upeu.pharmamobil.data.repository
 
 import kotlinx.coroutines.test.runTest
+import pe.edu.upeu.pharmamobil.data.repository.repository.ClienteRepositorioEnMemoria
 import pe.edu.upeu.pharmamobil.domain.model.Cliente
 import kotlin.test.Test
 import kotlin.test.assertEquals

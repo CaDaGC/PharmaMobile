@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalPharmacy
@@ -51,13 +52,14 @@ import org.koin.compose.KoinContext
 import org.koin.compose.viewmodel.koinViewModel
 
 import pe.edu.upeu.pharmamobil.navigation.Screen
+import pe.edu.upeu.pharmamobil.presentation.categoria.CategoriaScreen
 import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteScreen
 import pe.edu.upeu.pharmamobil.presentation.components.EstadoVacio
 import pe.edu.upeu.pharmamobil.presentation.inicio.InicioScreen
 import pe.edu.upeu.pharmamobil.presentation.producto.ProductoScreen
 import pe.edu.upeu.pharmamobil.theme.PharmaMobilTheme
 
-/** Una sola fuente para el menu lateral y el titulo de la barra superior. */
+/** Una sola fuente para el menú lateral y el título de la barra superior. */
 private data class Destino(
     val screen: Screen,
     val titulo: String,
@@ -66,18 +68,18 @@ private data class Destino(
 
 private val DESTINOS = listOf(
     Destino(Screen.Inicio, "Inicio", Icons.Default.Home),
+    Destino(Screen.Categorias, "Categorías", Icons.Default.Category), // <- Agregado para la API REST
     Destino(Screen.Productos, "Productos", Icons.Default.Medication),
     Destino(Screen.Clientes, "Clientes", Icons.Default.Person),
     Destino(Screen.Pedidos, "Pedidos", Icons.Default.ShoppingCart)
 )
-
 
 private val ScreenSaver = Saver<Screen, Int>(
     save = { pantalla ->
         DESTINOS.indexOfFirst { it.screen == pantalla }
     },
     restore = { indice ->
-        DESTINOS[indice].screen
+        if (indice in DESTINOS.indices) DESTINOS[indice].screen else Screen.Inicio
     }
 )
 
@@ -103,13 +105,9 @@ fun App() = KoinContext {
     ) {
 
         ModalNavigationDrawer(
-
             drawerState = drawerState,
-
             drawerContent = {
-
                 ModalDrawerSheet {
-
                     DrawerHeader()
 
                     HorizontalDivider()
@@ -119,16 +117,13 @@ fun App() = KoinContext {
                     )
 
                     DESTINOS.forEach { destino ->
-
                         NavigationDrawerItem(
                             label = {
                                 Text(destino.titulo)
                             },
                             selected = pantallaActual == destino.screen,
                             onClick = {
-
                                 pantallaActual = destino.screen
-
                                 scope.launch {
                                     drawerState.close()
                                 }
@@ -160,36 +155,27 @@ fun App() = KoinContext {
         ) {
 
             Scaffold(
-
                 topBar = {
-
                     TopAppBar(
-
                         title = {
                             Text(
                                 text = tituloDe(pantallaActual)
                             )
                         },
-
                         navigationIcon = {
-
                             IconButton(
                                 onClick = {
-
                                     scope.launch {
-
                                         drawerState.open()
                                     }
                                 }
                             ) {
-
                                 Icon(
                                     imageVector = Icons.Default.Menu,
                                     contentDescription = "Abrir menú"
                                 )
                             }
                         },
-
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -197,7 +183,6 @@ fun App() = KoinContext {
                         )
                     )
                 }
-
             ) { paddingValues ->
 
                 Box(
@@ -210,6 +195,11 @@ fun App() = KoinContext {
 
                         Screen.Inicio ->
                             InicioScreen()
+
+                        Screen.Categorias -> // <- Vista de la API REST de Categorías de Spring Boot
+                            CategoriaScreen(
+                                viewModel = koinViewModel()
+                            )
 
                         Screen.Productos ->
                             ProductoScreen(
@@ -235,10 +225,8 @@ fun App() = KoinContext {
     }
 }
 
-
 @Composable
 private fun DrawerHeader() {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,13 +234,11 @@ private fun DrawerHeader() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
-
             Icon(
                 imageVector = Icons.Default.LocalPharmacy,
                 contentDescription = null,
@@ -263,7 +249,6 @@ private fun DrawerHeader() {
         }
 
         Column {
-
             Text(
                 text = "PharmaMobil",
                 style = MaterialTheme.typography.titleLarge
@@ -278,13 +263,11 @@ private fun DrawerHeader() {
     }
 }
 
-
 @Composable
 private fun ModoOscuro(
     activo: Boolean,
     onCambiar: (Boolean) -> Unit
 ) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -295,7 +278,6 @@ private fun ModoOscuro(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-
         Icon(
             imageVector = Icons.Default.DarkMode,
             contentDescription = null,
@@ -314,10 +296,8 @@ private fun ModoOscuro(
     }
 }
 
-
 private fun tituloDe(
     screen: Screen
 ): String {
-
-    return DESTINOS.first { it.screen == screen }.titulo
+    return DESTINOS.firstOrNull { it.screen == screen }?.titulo ?: "PharmaMobil"
 }

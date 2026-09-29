@@ -6,7 +6,6 @@ import kotlinx.coroutines.sync.withLock
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 
-
 class ProductoRepositorioEnMemoria : ProductoRepository {
 
     private val candado = Mutex()
