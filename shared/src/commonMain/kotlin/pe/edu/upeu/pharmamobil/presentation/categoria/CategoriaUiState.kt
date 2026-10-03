@@ -11,10 +11,10 @@ data class FormularioCategoria(
 )
 
 data class CategoriaUiState(
-    val fase: Fase = Fase.Cargando,
-    val formulario: FormularioCategoria = FormularioCategoria(),
-    val operacion: Operacion = Operacion.Inactiva,
-    val mensajeExito: String? = null
+    val categorias: List<Categoria> = emptyList(),
+    val estaCargando: Boolean = false,
+    val mensajeError: String? = null,
+    val categoriaEditandoId: Long? = null
 )
 
 sealed interface Fase {
