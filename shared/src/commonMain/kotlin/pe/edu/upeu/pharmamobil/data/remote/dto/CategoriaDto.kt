@@ -14,14 +14,7 @@ data class CategoriaResponseDto(
     @SerialName("fechaModificacion") val fechaModificacion: String? = null
 )
 
-@Serializable
-data class CategoriaRequestDto(
-    @SerialName("nombre") val nombre: String,
-    @SerialName("descripcion") val descripcion: String? = null,
-    @SerialName("estado") val estado: Boolean = true
-)
 
-// Mapeador de DTO a Modelo de Dominio
 fun CategoriaResponseDto.toDomain(): Categoria {
     return Categoria(
         id = this.id ?: 0L,
