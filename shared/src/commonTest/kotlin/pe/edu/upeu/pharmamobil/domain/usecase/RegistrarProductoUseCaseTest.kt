@@ -1,7 +1,7 @@
 package pe.edu.upeu.pharmamobil.domain.usecase
 
 import kotlinx.coroutines.test.runTest
-import pe.edu.upeu.pharmamobil.data.repository.FakeProductoRepository
+import pe.edu.upeu.pharmamobil.data.repository.repository.FakeProductoRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

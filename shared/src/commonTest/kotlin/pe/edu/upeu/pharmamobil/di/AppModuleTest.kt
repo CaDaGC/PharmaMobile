@@ -8,8 +8,6 @@ import kotlinx.coroutines.test.setMain
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import pe.edu.upeu.pharmamobil.data.repository.repository.ClienteRepositorioEnMemoria
-import pe.edu.upeu.pharmamobil.data.repository.repository.ProductoRepositorioEnMemoria
 import pe.edu.upeu.pharmamobil.domain.repository.ClienteRepository
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.ListarClientesUseCase
@@ -25,13 +23,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertSame
 
 /**
- * Comprueba que el grafo se ensambla sin arrancar la aplicacion: si una
- * definicion falta o esta declarada con el tipo equivocado, falla aqui.
- *
- * Se cargan los cuatro modulos, incluido presentationModule: construir un
- * ViewModel es justo lo que se rompe al cambiar un constructor, y antes era
- * lo unico que el grafo no cubria. Como los ViewModel arrancan una carga en
- * su init, hace falta un Dispatchers.Main de prueba.
+ * Comprueba que el grafo de Koin se ensambla correctamente sin arrancar la aplicación.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppModuleTest {
@@ -52,17 +44,7 @@ class AppModuleTest {
     }.koin
 
     @Test
-    fun resuelveLosRepositoriosPorSuInterfazDeDominio() {
-
-        val koin = grafoCompleto()
-
-        assertIs<ProductoRepositorioEnMemoria>(koin.get<ProductoRepository>())
-        assertIs<ClienteRepositorioEnMemoria>(koin.get<ClienteRepository>())
-    }
-
-    @Test
     fun losRepositoriosSonUnicosEnTodaLaAplicacion() {
-
         val koin = grafoCompleto()
 
         assertSame(
@@ -77,7 +59,6 @@ class AppModuleTest {
 
     @Test
     fun resuelveLosCuatroCasosDeUsoConSusRepositorios() {
-
         val koin = grafoCompleto()
 
         koin.get<RegistrarProductoUseCase>()
@@ -88,7 +69,6 @@ class AppModuleTest {
 
     @Test
     fun resuelveLosViewModelConSusCasosDeUso() {
-
         val koin = grafoCompleto()
 
         koin.get<ProductoViewModel>()

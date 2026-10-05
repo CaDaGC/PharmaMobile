@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import pe.edu.upeu.pharmamobil.data.repository.FakeProductoRepository
+import pe.edu.upeu.pharmamobil.data.repository.repository.FakeProductoRepository
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.usecase.ListarProductosUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
