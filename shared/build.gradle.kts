@@ -72,6 +72,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation("io.ktor:ktor-client-mock:${ktor}")
         }
         iosMain.dependencies {
             implementation("io.ktor:ktor-client-darwin:$ktor")

@@ -33,3 +33,11 @@ data class CategoriaResponseDto(
     @SerialName("fechaCreacion") val fechaCreacion: String? = null,
     @SerialName("fechaModificacion") val fechaModificacion: String? = null
 )
+---
+
+### 4. Manejo de Errores y Excepciones (Módulo Categorías)
+La aplicación mapea las respuestas del backend mediante la sealed interface ErrorApi:
+- *Validación (HTTP 400):* Se capturan los mensajes específicos devueltos por Spring Boot para nombres vacíos o cortos (<3 caracteres) y se exponen en la UI sin cerrar la app.
+- *Recurso no encontrado (HTTP 404):* Mapeado a ErrorApi.NoEncontrado cuando se intenta acceder o eliminar una categoría inexistente.
+- *Conflicto (HTTP 409):* Mapeado a ErrorApi.Conflicto cuando se intenta eliminar una categoría con productos asociados.
+- *Fallos de red y timeout:* Atrapados mediante IOException y HttpRequestTimeoutException, representados con ErrorApi.SinConexion y ErrorApi.TiempoAgotado.
