@@ -7,13 +7,12 @@ import pe.edu.upeu.pharmamobil.domain.model.Categoria
 @Serializable
 data class CategoriaResponseDto(
     @SerialName("id") val id: Long? = null,
-    @SerialName("nombre") val nombre: String,
+    @SerialName("nombre") val nombre: String = "",
     @SerialName("descripcion") val descripcion: String? = null,
     @SerialName("estado") val estado: Boolean? = true,
     @SerialName("fechaCreacion") val fechaCreacion: String? = null,
     @SerialName("fechaModificacion") val fechaModificacion: String? = null
 )
-
 
 fun CategoriaResponseDto.toDomain(): Categoria {
     return Categoria(
@@ -24,11 +23,10 @@ fun CategoriaResponseDto.toDomain(): Categoria {
     )
 }
 
-// Mapeador de Modelo de Dominio a DTO de Petición
-fun Categoria.toRequestDto(): CategoriaRequestDto {
+fun Categoria.toRequest(): CategoriaRequestDto {
     return CategoriaRequestDto(
         nombre = this.nombre,
-        descripcion = this.descripcion,
+        descripcion = this.descripcion.ifBlank { null },
         estado = this.estado
     )
 }

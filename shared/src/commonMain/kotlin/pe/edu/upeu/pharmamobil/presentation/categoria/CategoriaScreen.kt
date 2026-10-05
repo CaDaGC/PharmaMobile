@@ -75,7 +75,12 @@ fun CategoriaScreen(
 
                 OutlinedTextField(
                     value = nombreState,
-                    onValueChange = { nombreState = it },
+                    onValueChange = {
+                        nombreState = it
+                        if (uiState.mensajeError != null || uiState.mensajeExito != null) {
+                            viewModel.limpiarMensajes()
+                        }
+                    },
                     label = { Text("Nombre") },
                     isError = uiState.mensajeError != null,
                     modifier = Modifier.fillMaxWidth()
@@ -85,19 +90,36 @@ fun CategoriaScreen(
 
                 OutlinedTextField(
                     value = descripcionState,
-                    onValueChange = { descripcionState = it },
+                    onValueChange = {
+                        descripcionState = it
+                        if (uiState.mensajeError != null || uiState.mensajeExito != null) {
+                            viewModel.limpiarMensajes()
+                        }
+                    },
                     label = { Text("Descripción") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Mensaje de error (HTTP 400 u otros) mostrado en rojo debajo del formulario
+                // Mensaje de Error (Rojo)
                 uiState.mensajeError?.let { error ->
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = error,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
+                }
+
+                // Mensaje de Éxito (Verde) - Solo si NO hay error activo
+                if (uiState.mensajeError == null) {
+                    uiState.mensajeExito?.let { exito ->
+                        Text(
+                            text = exito,
+                            color = Color(0xFF1B5E20),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -123,7 +145,11 @@ fun CategoriaScreen(
                         onClick = {
                             viewModel.guardarCategoria(
                                 nombre = nombreState,
-                                descripcion = descripcionState
+                                descripcion = descripcionState,
+                                onSuccessCallback = {
+                                    nombreState = ""
+                                    descripcionState = ""
+                                }
                             )
                         },
                         enabled = !uiState.estaCargando

@@ -30,35 +30,30 @@ class CategoriaViewModel(
     fun cargarCategorias() {
         viewModelScope.launch {
             _uiState.update { it.copy(estaCargando = true, mensajeError = null) }
-            try {
-                listarCategoriasUseCase()
-                    .onSuccess { lista ->
-                        _uiState.update { it.copy(categorias = lista, estaCargando = false) }
-                    }
-                    .onFailure { error ->
-                        _uiState.update {
-                            it.copy(estaCargando = false, mensajeError = error.message ?: "Error al cargar categorías")
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(estaCargando = false, mensajeError = e.message ?: "Error inesperado")
+            listarCategoriasUseCase()
+                .onSuccess { lista ->
+                    _uiState.update { it.copy(categorias = lista, estaCargando = false) }
                 }
-            }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(estaCargando = false, mensajeError = error.message ?: "Error al cargar categorías")
+                    }
+                }
         }
     }
 
-    fun guardarCategoria(nombre: String, descripcion: String) {
+    fun guardarCategoria(nombre: String, descripcion: String, onSuccessCallback: () -> Unit = {}) {
         viewModelScope.launch {
-            _uiState.update { it.copy(estaCargando = true, mensajeError = null) }
+            _uiState.update { it.copy(estaCargando = true, mensajeError = null, mensajeExito = null) }
             try {
+                val esEdicion = _uiState.value.categoriaEditandoId != null
                 val categoria = Categoria(
-                    id = _uiState.value.categoriaEditandoId ?: 0,
-                    nombre = nombre,
-                    descripcion = descripcion
+                    id = _uiState.value.categoriaEditandoId ?: 0L,
+                    nombre = nombre.trim(),
+                    descripcion = descripcion.trim()
                 )
 
-                val resultado = if (_uiState.value.categoriaEditandoId == null) {
+                val resultado = if (!esEdicion) {
                     registrarCategoriaUseCase(categoria)
                 } else {
                     actualizarCategoriaUseCase(categoria)
@@ -66,14 +61,24 @@ class CategoriaViewModel(
 
                 resultado.fold(
                     onSuccess = {
-                        _uiState.update { it.copy(categoriaEditandoId = null) }
+                        val mensaje = if (!esEdicion) "Categoría registrada correctamente" else "Categoría actualizada correctamente"
+                        _uiState.update {
+                            it.copy(
+                                categoriaEditandoId = null,
+                                estaCargando = false,
+                                mensajeExito = mensaje,
+                                mensajeError = null
+                            )
+                        }
+                        onSuccessCallback()
                         cargarCategorias()
                     },
                     onFailure = { error ->
                         _uiState.update {
                             it.copy(
                                 estaCargando = false,
-                                mensajeError = error.message ?: "Error de validación al guardar"
+                                mensajeError = error.message ?: "El nombre debe tener al menos 3 caracteres",
+                                mensajeExito = null
                             )
                         }
                     }
@@ -82,7 +87,8 @@ class CategoriaViewModel(
                 _uiState.update {
                     it.copy(
                         estaCargando = false,
-                        mensajeError = e.message ?: "Ocurrió un error inesperado al guardar"
+                        mensajeError = e.message ?: "Ocurrió un error inesperado",
+                        mensajeExito = null
                     )
                 }
             }
@@ -91,34 +97,56 @@ class CategoriaViewModel(
 
     fun prepararEdicion(categoria: Categoria) {
         _uiState.update {
-            it.copy(categoriaEditandoId = categoria.id, mensajeError = null)
+            it.copy(categoriaEditandoId = categoria.id, mensajeError = null, mensajeExito = null)
         }
     }
 
     fun cancelarEdicion() {
         _uiState.update {
-            it.copy(categoriaEditandoId = null, mensajeError = null)
+            it.copy(categoriaEditandoId = null, mensajeError = null, mensajeExito = null)
+        }
+    }
+
+    fun limpiarMensajes() {
+        _uiState.update {
+            it.copy(mensajeError = null, mensajeExito = null)
         }
     }
 
     fun eliminarCategoria(id: Long) {
         viewModelScope.launch {
-            _uiState.update { it.copy(estaCargando = true, mensajeError = null) }
-            try {
-                eliminarCategoriaUseCase(id)
-                    .onSuccess {
-                        cargarCategorias()
-                    }
-                    .onFailure { error ->
-                        _uiState.update {
-                            it.copy(estaCargando = false, mensajeError = error.message ?: "Error al eliminar")
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(estaCargando = false, mensajeError = e.message ?: "Error al eliminar la categoría")
-                }
+            // 1. Reiniciamos ambos mensajes antes de la llamada
+            _uiState.update {
+                it.copy(
+                    estaCargando = true,
+                    mensajeError = null,
+                    mensajeExito = null
+                )
             }
+
+            val resultado = eliminarCategoriaUseCase(id)
+
+            resultado.fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(
+                            estaCargando = false,
+                            mensajeExito = "Categoría eliminada correctamente",
+                            mensajeError = null
+                        )
+                    }
+                    cargarCategorias()
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            estaCargando = false,
+                            mensajeExito = null, // CLAVE: Desaparece el texto verde inmediatamente
+                            mensajeError = error.message ?: "No se puede eliminar la categoría porque tiene productos asociados"
+                        )
+                    }
+                }
+            )
         }
     }
 }

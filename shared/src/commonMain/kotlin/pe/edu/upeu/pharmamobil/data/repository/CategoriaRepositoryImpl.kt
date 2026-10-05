@@ -11,7 +11,6 @@ class CategoriaRepositoryImpl(
     private val api: CategoriaApiService
 ) : CategoriaRepository {
 
-    // Ahora mapeamos directamente la lista recibida
     override suspend fun listar(): Result<List<Categoria>> = ejecutarLlamada {
         api.listar().map { it.toDomain() }
     }

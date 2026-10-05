@@ -1,4 +1,4 @@
-package pe.edu.upeu.pharmamobil.data.repository
+package pe.edu.upeu.pharmamobil.data.repository.repository
 
 import pe.edu.upeu.pharmamobil.domain.model.Cliente
 import pe.edu.upeu.pharmamobil.domain.repository.ClienteRepository

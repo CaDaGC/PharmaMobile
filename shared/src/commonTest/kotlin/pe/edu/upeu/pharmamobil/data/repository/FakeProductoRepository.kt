@@ -1,8 +1,7 @@
-package pe.edu.upeu.pharmamobil.data.repository
+package pe.edu.upeu.pharmamobil.data.repository.repository
 
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
-
 
 class FakeProductoRepository(
     private val productos: MutableList<Producto> = mutableListOf()
