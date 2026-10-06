@@ -7,14 +7,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import pe.edu.upeu.pharmamobil.domain.model.Producto
+import pe.edu.upeu.pharmamobil.domain.platform.Compartidor
 import pe.edu.upeu.pharmamobil.domain.usecase.ListarProductosUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.ProductoInvalidoException
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
-
+import pe.edu.upeu.pharmamobil.domain.usecase.comoTextoParaCompartir
 
 class ProductoViewModel(
     private val registrarProducto: RegistrarProductoUseCase,
-    private val listarProductos: ListarProductosUseCase
+    private val listarProductos: ListarProductosUseCase,
+    private val compartidor: Compartidor // <- Inyectamos el Compartidor aquí
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductoUiState())
@@ -24,10 +27,13 @@ class ProductoViewModel(
         cargarProductos()
     }
 
+    // Método para activar la capacidad nativa de compartir
+    fun compartirProducto(producto: Producto) {
+        compartidor.compartir(producto.comoTextoParaCompartir())
+    }
+
     fun cargarProductos() {
-
         viewModelScope.launch {
-
             _uiState.update {
                 it.copy(fase = ProductoUiState.Fase.Cargando)
             }
@@ -81,11 +87,9 @@ class ProductoViewModel(
     }
 
     fun registrar() {
-
         if (_uiState.value.registrando) return
 
         viewModelScope.launch {
-
             _uiState.update {
                 it.copy(registrando = true, mensajeExito = null)
             }
@@ -109,7 +113,6 @@ class ProductoViewModel(
                 },
                 onFailure = { fallo ->
                     when (fallo) {
-
                         is ProductoInvalidoException -> _uiState.update {
                             it.copy(
                                 registrando = false,

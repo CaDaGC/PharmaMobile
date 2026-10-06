@@ -53,7 +53,7 @@ val domainModule = module {
 
 val presentationModule = module {
     viewModel { CategoriaViewModel(get(), get(), get(), get()) }
-    viewModel { ProductoViewModel(get(), get()) }
+    viewModel { ProductoViewModel(get(), get(), get()) }
     viewModel { ClienteViewModel(get(), get()) }
 }
 
