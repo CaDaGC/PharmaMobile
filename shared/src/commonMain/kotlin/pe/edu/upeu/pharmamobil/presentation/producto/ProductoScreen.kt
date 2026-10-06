@@ -15,11 +15,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.presentation.components.EstadoVacio
 import pe.edu.upeu.pharmamobil.presentation.components.MensajeExito
 import pe.edu.upeu.pharmamobil.presentation.components.ValidatedTextField
@@ -39,7 +42,6 @@ fun ProductoScreen(
     viewModel: ProductoViewModel,
     modifier: Modifier = Modifier
 ) {
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
@@ -48,7 +50,6 @@ fun ProductoScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
         FormularioProductoCard(
             formulario = uiState.formulario,
             registrando = uiState.registrando,
@@ -69,18 +70,14 @@ fun ProductoScreen(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-
             when (val fase = uiState.fase) {
-
                 ProductoUiState.Fase.Cargando ->
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-
                         CircularProgressIndicator()
-
                         Text(
                             text = "Cargando inventario…",
                             style = MaterialTheme.typography.bodyMedium,
@@ -103,8 +100,32 @@ fun ProductoScreen(
                         items(
                             items = fase.productos,
                             key = { it.id }
-                        ) { producto ->
-                            ProductoItem(producto)
+                        ) { productoUi ->
+                            ProductoItem(
+                                producto = productoUi,
+                                onCompartir = {
+                                    // Limpiamos los datos mapeados para reconstruir la entidad de dominio
+                                    val precioLimpio = productoUi.precio
+                                        .replace("S/", "")
+                                        .replace("S/.", "")
+                                        .replace(",", ".")
+                                        .trim()
+                                        .toDoubleOrNull() ?: 0.0
+
+                                    val stockLimpio = productoUi.stock
+                                        .replace("u.", "")
+                                        .trim()
+                                        .toIntOrNull() ?: 0
+
+                                    val productoDominio = Producto(
+                                        id = productoUi.id,
+                                        nombre = productoUi.nombre,
+                                        precio = precioLimpio,
+                                        stock = stockLimpio
+                                    )
+                                    viewModel.compartirProducto(productoDominio)
+                                }
+                            )
                         }
                     }
 
@@ -126,7 +147,6 @@ fun ProductoScreen(
     }
 }
 
-
 @Composable
 private fun FormularioProductoCard(
     formulario: FormularioProducto,
@@ -136,16 +156,13 @@ private fun FormularioProductoCard(
     onStockChange: (String) -> Unit,
     onRegistrar: () -> Unit
 ) {
-
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
-
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Text(
                 text = "Registrar producto",
                 style = MaterialTheme.typography.titleMedium
@@ -164,7 +181,6 @@ private fun FormularioProductoCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
                 ValidatedTextField(
                     value = formulario.precio,
                     onValueChange = onPrecioChange,
@@ -197,17 +213,14 @@ private fun FormularioProductoCard(
     }
 }
 
-
 @Composable
 private fun EncabezadoInventario(
     fase: ProductoUiState.Fase
 ) {
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         Text(
             text = "Inventario",
             style = MaterialTheme.typography.titleMedium,
@@ -215,9 +228,7 @@ private fun EncabezadoInventario(
         )
 
         if (fase is ProductoUiState.Fase.ConProductos) {
-
             val cantidad = fase.productos.size
-
             Text(
                 text = if (cantidad == 1) "1 producto" else "$cantidad productos",
                 style = MaterialTheme.typography.labelLarge,
@@ -227,28 +238,24 @@ private fun EncabezadoInventario(
     }
 }
 
-
 @Composable
 private fun ProductoItem(
-    producto: ProductoUi
+    producto: ProductoUi,
+    onCompartir: () -> Unit
 ) {
-
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
-
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
             ) {
-
                 Icon(
                     imageVector = Icons.Default.Medication,
                     contentDescription = null,
@@ -261,7 +268,6 @@ private fun ProductoItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-
                 Text(
                     text = producto.nombre,
                     style = MaterialTheme.typography.titleSmall
@@ -275,13 +281,11 @@ private fun ProductoItem(
             }
 
             if (producto.requiereReposicion) {
-
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.errorContainer,
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 ) {
-
                     Text(
                         text = "Reponer",
                         style = MaterialTheme.typography.labelSmall,
@@ -291,6 +295,15 @@ private fun ProductoItem(
                         )
                     )
                 }
+            }
+
+            // Botón de Compartir en el item
+            IconButton(onClick = onCompartir) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Compartir producto",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
