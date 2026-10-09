@@ -13,9 +13,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,14 +27,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pe.edu.upeu.pharmamobil.domain.model.Producto
+import pe.edu.upeu.pharmamobil.platform.InfoDispositivo
 import pe.edu.upeu.pharmamobil.presentation.components.EstadoVacio
 import pe.edu.upeu.pharmamobil.presentation.components.MensajeExito
 import pe.edu.upeu.pharmamobil.presentation.components.ValidatedTextField
@@ -43,6 +50,7 @@ fun ProductoScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var mostrarAcercaDe by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -50,6 +58,25 @@ fun ProductoScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Encabezado superior con botón de "Acerca de"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "PharmaMobil",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            IconButton(onClick = { mostrarAcercaDe = true }) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Acerca de la app",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
         FormularioProductoCard(
             formulario = uiState.formulario,
             registrando = uiState.registrando,
@@ -104,7 +131,6 @@ fun ProductoScreen(
                             ProductoItem(
                                 producto = productoUi,
                                 onCompartir = {
-                                    // Limpiamos los datos mapeados para reconstruir la entidad de dominio
                                     val precioLimpio = productoUi.precio
                                         .replace("S/", "")
                                         .replace("S/.", "")
@@ -144,6 +170,27 @@ fun ProductoScreen(
                     )
             }
         }
+    }
+
+    // Diálogo "Acerca de" que usa la capacidad nativa InfoDispositivo
+    if (mostrarAcercaDe) {
+        val info = remember { InfoDispositivo() }
+        AlertDialog(
+            onDismissRequest = { mostrarAcercaDe = false },
+            title = { Text("Acerca de PharmaMobil") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Aplicación KMP para gestión farmacéutica.")
+                    Text("Sistema: ${info.sistema}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Dispositivo: ${info.version}", style = MaterialTheme.typography.bodyMedium)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { mostrarAcercaDe = false }) {
+                    Text("Entendido")
+                }
+            }
+        )
     }
 }
 
@@ -297,7 +344,6 @@ private fun ProductoItem(
                 }
             }
 
-            // Botón de Compartir en el item
             IconButton(onClick = onCompartir) {
                 Icon(
                     imageVector = Icons.Default.Share,
