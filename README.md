@@ -41,3 +41,16 @@ La aplicación mapea las respuestas del backend mediante la sealed interface Err
 - *Recurso no encontrado (HTTP 404):* Mapeado a ErrorApi.NoEncontrado cuando se intenta acceder o eliminar una categoría inexistente.
 - *Conflicto (HTTP 409):* Mapeado a ErrorApi.Conflicto cuando se intenta eliminar una categoría con productos asociados.
 - *Fallos de red y timeout:* Atrapados mediante IOException y HttpRequestTimeoutException, representados con ErrorApi.SinConexion y ErrorApi.TiempoAgotado.
+
+
+--------------------------------------------------------------------------------------
+### 5. Código específico de plataforma
+
+PharmaMobil utiliza el mecanismo `expect` / `actual` e inyección de dependencias para aislar las capacidades nativas del sistema operativo:
+
+| Capacidad | Tipo / Firma | Archivo expect | Implementation Android | Implementation iOS |
+| :--- | :--- | :--- | :--- | :--- |
+| **Formato de Moneda** | `expect fun formatearSoles(valor: Double): String` | `commonMain/.../platform/Formato.kt` | `androidMain/.../platform/Formato.android.kt` (`NumberFormat`) | `iosMain/.../platform/Formato.ios.kt` (`NSNumberFormatter`) |
+| **Compartir Producto** | `interface Compartidor` | `commonMain/.../domain/platform/Compartidor.kt` | `androidMain/.../platform/CompartidorAndroid.kt` (`Intent.ACTION_SEND`) | `iosMain/.../platform/CompartidorIos.kt` (`UIActivityViewController`) |
+| **Información Dispositivo** | `expect class InfoDispositivo()` | `commonMain/.../platform/InfoDispositivo.kt` | `androidMain/.../platform/InfoDispositivo.android.kt` (`Build.VERSION`) | `iosMain/.../platform/InfoDispositivo.ios.kt` (`UIDevice.currentDevice`) |
+| **Módulo de Inyección** | `expect val platformModule: Module` | `commonMain/.../di/PlatformModule.kt` | `androidMain/.../di/PlatformModule.android.kt` | `iosMain/.../di/PlatformModule.ios.kt` |
