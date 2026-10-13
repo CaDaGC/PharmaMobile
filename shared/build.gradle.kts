@@ -69,6 +69,7 @@ kotlin {
             implementation("io.ktor:ktor-client-content-negotiation:${ktor}")
             implementation("io.ktor:ktor-serialization-kotlinx-json:${ktor}")
             implementation("io.ktor:ktor-client-logging:${ktor}")
+            implementation("io.ktor:ktor-client-auth:${ktor}")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
