@@ -52,6 +52,8 @@ import org.koin.compose.KoinContext
 import org.koin.compose.viewmodel.koinViewModel
 
 import pe.edu.upeu.pharmamobil.navigation.Screen
+import pe.edu.upeu.pharmamobil.presentation.auth.LoginScreen
+import pe.edu.upeu.pharmamobil.presentation.auth.LoginViewModel
 import pe.edu.upeu.pharmamobil.presentation.categoria.CategoriaScreen
 import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteScreen
 import pe.edu.upeu.pharmamobil.presentation.components.EstadoVacio
@@ -68,7 +70,7 @@ private data class Destino(
 
 private val DESTINOS = listOf(
     Destino(Screen.Inicio, "Inicio", Icons.Default.Home),
-    Destino(Screen.Categorias, "Categorías", Icons.Default.Category), // <- Agregado para la API REST
+    Destino(Screen.Categorias, "Categorías", Icons.Default.Category),
     Destino(Screen.Productos, "Productos", Icons.Default.Medication),
     Destino(Screen.Clientes, "Clientes", Icons.Default.Person),
     Destino(Screen.Pedidos, "Pedidos", Icons.Default.ShoppingCart)
@@ -86,138 +88,151 @@ private val ScreenSaver = Saver<Screen, Int>(
 @Composable
 fun App() = KoinContext {
 
-    var pantallaActual by rememberSaveable(stateSaver = ScreenSaver) {
-        mutableStateOf<Screen>(Screen.Inicio)
-    }
+    // Control de sesión iniciada (puedes cambiarlo a true si deseas omitir el login temporalmente en pruebas)
+    var sesionIniciada by rememberSaveable { mutableStateOf(false) }
 
-    var darkTheme by rememberSaveable {
-        mutableStateOf(false)
-    }
+    if (!sesionIniciada) {
+        val loginViewModel: LoginViewModel = koinViewModel()
+        LoginScreen(
+            viewModel = loginViewModel,
+            onLoginExitoso = {
+                sesionIniciada = true
+            }
+        )
+    } else {
+        var pantallaActual by rememberSaveable(stateSaver = ScreenSaver) {
+            mutableStateOf<Screen>(Screen.Inicio)
+        }
 
-    val drawerState = rememberDrawerState(
-        initialValue = DrawerValue.Closed
-    )
+        var darkTheme by rememberSaveable {
+            mutableStateOf(false)
+        }
 
-    val scope = rememberCoroutineScope()
+        val drawerState = rememberDrawerState(
+            initialValue = DrawerValue.Closed
+        )
 
-    PharmaMobilTheme(
-        darkTheme = darkTheme
-    ) {
+        val scope = rememberCoroutineScope()
 
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
-                ModalDrawerSheet {
-                    DrawerHeader()
+        PharmaMobilTheme(
+            darkTheme = darkTheme
+        ) {
 
-                    HorizontalDivider()
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    ModalDrawerSheet {
+                        DrawerHeader()
 
-                    Spacer(
-                        modifier = Modifier.height(12.dp)
-                    )
+                        HorizontalDivider()
 
-                    DESTINOS.forEach { destino ->
-                        NavigationDrawerItem(
-                            label = {
-                                Text(destino.titulo)
-                            },
-                            selected = pantallaActual == destino.screen,
-                            onClick = {
-                                pantallaActual = destino.screen
-                                scope.launch {
-                                    drawerState.close()
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = destino.icono,
-                                    contentDescription = null
+                        Spacer(
+                            modifier = Modifier.height(12.dp)
+                        )
+
+                        DESTINOS.forEach { destino ->
+                            NavigationDrawerItem(
+                                label = {
+                                    Text(destino.titulo)
+                                },
+                                selected = pantallaActual == destino.screen,
+                                onClick = {
+                                    pantallaActual = destino.screen
+                                    scope.launch {
+                                        drawerState.close()
+                                    }
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = destino.icono,
+                                        contentDescription = null
+                                    )
+                                },
+                                modifier = Modifier.padding(
+                                    NavigationDrawerItemDefaults.ItemPadding
+                                )
+                            )
+                        }
+
+                        Spacer(
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        HorizontalDivider()
+
+                        ModoOscuro(
+                            activo = darkTheme,
+                            onCambiar = { darkTheme = it }
+                        )
+                    }
+                }
+            ) {
+
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    text = tituloDe(pantallaActual)
                                 )
                             },
-                            modifier = Modifier.padding(
-                                NavigationDrawerItemDefaults.ItemPadding
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            drawerState.open()
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Menu,
+                                        contentDescription = "Abrir menú"
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         )
                     }
+                ) { paddingValues ->
 
-                    Spacer(
-                        modifier = Modifier.weight(1f)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                    ) {
 
-                    HorizontalDivider()
+                        when (pantallaActual) {
 
-                    ModoOscuro(
-                        activo = darkTheme,
-                        onCambiar = { darkTheme = it }
-                    )
-                }
-            }
-        ) {
+                            Screen.Inicio ->
+                                InicioScreen()
 
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = tituloDe(pantallaActual)
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    scope.launch {
-                                        drawerState.open()
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Menu,
-                                    contentDescription = "Abrir menú"
+                            Screen.Categorias ->
+                                CategoriaScreen(
+                                    viewModel = koinViewModel()
                                 )
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                }
-            ) { paddingValues ->
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
+                            Screen.Productos ->
+                                ProductoScreen(
+                                    viewModel = koinViewModel()
+                                )
 
-                    when (pantallaActual) {
+                            Screen.Clientes ->
+                                ClienteScreen(
+                                    viewModel = koinViewModel()
+                                )
 
-                        Screen.Inicio ->
-                            InicioScreen()
-
-                        Screen.Categorias -> // <- Vista de la API REST de Categorías de Spring Boot
-                            CategoriaScreen(
-                                viewModel = koinViewModel()
-                            )
-
-                        Screen.Productos ->
-                            ProductoScreen(
-                                viewModel = koinViewModel()
-                            )
-
-                        Screen.Clientes ->
-                            ClienteScreen(
-                                viewModel = koinViewModel()
-                            )
-
-                        Screen.Pedidos ->
-                            EstadoVacio(
-                                icono = Icons.Default.ShoppingCart,
-                                titulo = "Pedidos en construcción",
-                                descripcion = "Este módulo llega en una próxima sesión del curso.",
-                                modifier = Modifier.align(Alignment.Center)
-                            )
+                            Screen.Pedidos ->
+                                EstadoVacio(
+                                    icono = Icons.Default.ShoppingCart,
+                                    titulo = "Pedidos en construcción",
+                                    descripcion = "Este módulo llega en una próxima sesión del curso.",
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                        }
                     }
                 }
             }

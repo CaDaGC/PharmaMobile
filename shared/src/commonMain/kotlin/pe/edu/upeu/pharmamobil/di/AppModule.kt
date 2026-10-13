@@ -21,6 +21,7 @@ import pe.edu.upeu.pharmamobil.domain.usecase.ListarProductosUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarCategoriaUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarClienteUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
+import pe.edu.upeu.pharmamobil.presentation.auth.LoginViewModel
 import pe.edu.upeu.pharmamobil.presentation.categoria.CategoriaViewModel
 import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteViewModel
 import pe.edu.upeu.pharmamobil.presentation.producto.ProductoViewModel
@@ -55,13 +56,14 @@ val presentationModule = module {
     viewModel { CategoriaViewModel(get(), get(), get(), get()) }
     viewModel { ProductoViewModel(get(), get(), get()) }
     viewModel { ClienteViewModel(get(), get()) }
+    viewModel { LoginViewModel(get()) }
 }
 
 val appModule = module {
     includes(dataModule, domainModule, presentationModule)
 }
 
-expect val platformModule: Module
+
 
 fun initKoin(configuracionAdicional: KoinApplication.() -> Unit = {}) {
     startKoin {
@@ -70,7 +72,6 @@ fun initKoin(configuracionAdicional: KoinApplication.() -> Unit = {}) {
             dataModule,
             domainModule,
             presentationModule,
-            platformModule
         )
     }
 }
