@@ -7,9 +7,11 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import pe.edu.upeu.pharmamobil.data.remote.CategoriaApiService
 import pe.edu.upeu.pharmamobil.data.remote.HttpClientFactory
+import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
 import pe.edu.upeu.pharmamobil.data.repository.CategoriaRepositoryImpl
 import pe.edu.upeu.pharmamobil.data.repository.ClienteRepositorioEnMemoria
 import pe.edu.upeu.pharmamobil.data.repository.ProductoRepositorioEnMemoria
+import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
 import pe.edu.upeu.pharmamobil.domain.repository.CategoriaRepository
 import pe.edu.upeu.pharmamobil.domain.repository.ClienteRepository
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
@@ -27,16 +29,10 @@ import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteViewModel
 import pe.edu.upeu.pharmamobil.presentation.producto.ProductoViewModel
 
 val dataModule = module {
-    // Cliente HTTP inyectando el engine específico de cada plataforma
-    single { HttpClientFactory.create(get()) }
-
-    // Servicio API REST
+    single { HttpClientFactory.create(engine = get(), almacen = get(), esDepuracion = true) }
     single { CategoriaApiService(get()) }
-
-    // Repositorio REST de Categorías
     single<CategoriaRepository> { CategoriaRepositoryImpl(get()) }
-
-    // Repositorios locales en memoria
+    single<AuthRepository> { AuthRepositorioRest(get(), get()) }
     single<ProductoRepository> { ProductoRepositorioEnMemoria() }
     single<ClienteRepository> { ClienteRepositorioEnMemoria() }
 }
@@ -63,15 +59,15 @@ val appModule = module {
     includes(dataModule, domainModule, presentationModule)
 }
 
-
+// Declaración expect obligatoria para que el actual de Android e iOS funcione
+expect val platformModule: Module
 
 fun initKoin(configuracionAdicional: KoinApplication.() -> Unit = {}) {
     startKoin {
         configuracionAdicional()
         modules(
-            dataModule,
-            domainModule,
-            presentationModule,
+            appModule,
+            platformModule
         )
     }
 }

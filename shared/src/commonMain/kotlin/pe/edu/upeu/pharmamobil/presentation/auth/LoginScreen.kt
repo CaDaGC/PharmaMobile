@@ -56,7 +56,7 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = state.usuario,
-                onValueChange = viewModel::onUsuarioChanged,
+                onValueChange = { viewModel.onUsuarioChanged(it) },
                 label = { Text("Usuario") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Usuario") },
                 singleLine = true,
@@ -67,7 +67,7 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = state.clave,
-                onValueChange = viewModel::onClaveChanged,
+                onValueChange = { viewModel.onClaveChanged(it) },
                 label = { Text("Contraseña") },
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
@@ -88,7 +88,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = viewModel.onIniciarSesion,
+                onClick = { viewModel.onIniciarSesion() },
                 enabled = !state.cargando,
                 modifier = Modifier
                     .fillMaxWidth()
