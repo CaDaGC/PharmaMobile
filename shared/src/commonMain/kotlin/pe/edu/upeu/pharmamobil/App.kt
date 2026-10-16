@@ -1,5 +1,6 @@
 package pe.edu.upeu.pharmamobil
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalPharmacy
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
@@ -49,7 +51,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinContext
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
+import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
 
 import pe.edu.upeu.pharmamobil.navigation.Screen
 import pe.edu.upeu.pharmamobil.presentation.auth.LoginScreen
@@ -88,8 +93,13 @@ private val ScreenSaver = Saver<Screen, Int>(
 @Composable
 fun App() = KoinContext {
 
-    // Control de sesión iniciada (puedes cambiarlo a true si deseas omitir el login temporalmente en pruebas)
-    var sesionIniciada by rememberSaveable { mutableStateOf(false) }
+    // Inyectamos el repositorio de autenticación mediante Koin
+    val almacen: AlmacenSeguro = koinInject()
+
+    // Verificamos si ya existe un token guardado de forma segura al abrir la app
+    var sesionIniciada by rememberSaveable {
+        mutableStateOf(almacen.leerToken() != null)
+    }
 
     if (!sesionIniciada) {
         val loginViewModel: LoginViewModel = koinViewModel()
@@ -159,6 +169,13 @@ fun App() = KoinContext {
                         )
 
                         HorizontalDivider()
+
+                        BotonCerrarSesion(
+                            onCerrarSesion = {
+                                almacen.borrarToken()
+                                sesionIniciada = false
+                            }
+                        )
 
                         ModoOscuro(
                             activo = darkTheme,
@@ -307,6 +324,34 @@ private fun ModoOscuro(
         Switch(
             checked = activo,
             onCheckedChange = onCambiar
+        )
+    }
+}
+
+@Composable
+private fun BotonCerrarSesion(
+    onCerrarSesion: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onCerrarSesion)
+            .padding(
+                horizontal = 28.dp,
+                vertical = 16.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Logout,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error
+        )
+
+        Text(
+            text = "Cerrar sesión",
+            color = MaterialTheme.colorScheme.error
         )
     }
 }
