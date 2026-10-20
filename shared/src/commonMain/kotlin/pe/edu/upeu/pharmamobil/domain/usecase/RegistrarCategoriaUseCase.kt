@@ -4,5 +4,7 @@ import pe.edu.upeu.pharmamobil.domain.model.Categoria
 import pe.edu.upeu.pharmamobil.domain.repository.CategoriaRepository
 
 class RegistrarCategoriaUseCase(private val repository: CategoriaRepository) {
-    suspend operator fun invoke(categoria: Categoria): Result<Categoria> { return repository.registrar(categoria) }
+    suspend operator fun invoke(categoria: Categoria): Result<Categoria> = runCatching {
+        repository.registrar(categoria)
+    }
 }
