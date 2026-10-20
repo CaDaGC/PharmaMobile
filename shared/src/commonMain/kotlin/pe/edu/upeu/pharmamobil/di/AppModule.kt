@@ -5,12 +5,15 @@ import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import pe.edu.upeu.pharmamobil.data.local.CategoriaLocal
+import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriver
 import pe.edu.upeu.pharmamobil.data.remote.CategoriaApiService
 import pe.edu.upeu.pharmamobil.data.remote.HttpClientFactory
 import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
 import pe.edu.upeu.pharmamobil.data.repository.CategoriaRepositoryImpl
 import pe.edu.upeu.pharmamobil.data.repository.ClienteRepositorioEnMemoria
 import pe.edu.upeu.pharmamobil.data.repository.ProductoRepositorioEnMemoria
+import pe.edu.upeu.pharmamobil.db.PharmaDb
 import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
 import pe.edu.upeu.pharmamobil.domain.repository.CategoriaRepository
 import pe.edu.upeu.pharmamobil.domain.repository.ClienteRepository
@@ -31,10 +34,12 @@ import pe.edu.upeu.pharmamobil.presentation.producto.ProductoViewModel
 val dataModule = module {
     single { HttpClientFactory.create(engine = get(), almacen = get(), esDepuracion = true) }
     single { CategoriaApiService(get()) }
-    single<CategoriaRepository> { CategoriaRepositoryImpl(get()) }
     single<AuthRepository> { AuthRepositorioRest(get(), get()) }
     single<ProductoRepository> { ProductoRepositorioEnMemoria() }
     single<ClienteRepository> { ClienteRepositorioEnMemoria() }
+    single { PharmaDb(get<CreadorDeDriver>().crear()) }
+    single { CategoriaLocal(get()) }
+    single<CategoriaRepository> { CategoriaRepositoryImpl(get(), get()) }
 }
 
 val domainModule = module {
@@ -46,13 +51,24 @@ val domainModule = module {
     factory { RegistrarCategoriaUseCase(get()) }
     factory { ActualizarCategoriaUseCase(get()) }
     factory { EliminarCategoriaUseCase(get()) }
+    factory { ListarCategoriasUseCase(get()) }
+    factory { RegistrarCategoriaUseCase(get()) }
+    factory { ActualizarCategoriaUseCase(get()) }
 }
 
 val presentationModule = module {
-    viewModel { CategoriaViewModel(get(), get(), get(), get()) }
     viewModel { ProductoViewModel(get(), get(), get()) }
     viewModel { ClienteViewModel(get(), get()) }
     viewModel { LoginViewModel(get()) }
+    viewModel {
+        CategoriaViewModel(
+            categoriaRepository = get(),
+            listarCategoriasUseCase = get(),
+            registrarCategoriaUseCase = get(),
+            actualizarCategoriaUseCase = get(),
+            eliminarCategoriaUseCase = get()
+        )
+    }
 }
 
 val appModule = module {

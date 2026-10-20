@@ -5,6 +5,8 @@ import io.ktor.client.engine.darwin.Darwin
 import org.koin.dsl.module
 import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
 import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguroIos
+import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriver
+import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriverIos
 import pe.edu.upeu.pharmamobil.data.remote.HttpClientFactory
 import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
 import pe.edu.upeu.pharmamobil.domain.platform.Compartidor
@@ -22,4 +24,5 @@ val iosModule = module {
             esDepuracion = true
         )
     }
+    single<CreadorDeDriver> { CreadorDeDriverIos() }
 }
