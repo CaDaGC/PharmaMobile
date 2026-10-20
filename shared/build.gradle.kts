@@ -6,8 +6,8 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     kotlin("plugin.serialization") version "2.0.20"
+    alias(libs.plugins.sqldelight)
 }
-
 val ktor = "3.0.0"
 
 kotlin {
@@ -50,6 +50,7 @@ kotlin {
             api(libs.koin.android)
             implementation("io.ktor:ktor-client-okhttp:${ktor}")
             implementation("androidx.security:security-crypto:1.1.0-alpha06")
+            implementation(libs.sqldelight.android)
         }
         commonMain.dependencies {
             // api: androidApp llama a initKoin(), cuya firma expone KoinAppDeclaration.
@@ -70,6 +71,8 @@ kotlin {
             implementation("io.ktor:ktor-serialization-kotlinx-json:${ktor}")
             implementation("io.ktor:ktor-client-logging:${ktor}")
             implementation("io.ktor:ktor-client-auth:${ktor}")
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutines)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -78,6 +81,7 @@ kotlin {
         }
         iosMain.dependencies {
             implementation("io.ktor:ktor-client-darwin:$ktor")
+            implementation(libs.sqldelight.native)
         }
     }
 }
@@ -89,5 +93,13 @@ dependencies {
 tasks.withType<Test>().configureEach {
     testLogging {
         showStandardStreams = true
+    }
+}
+
+sqldelight {
+    databases {
+        create("PharmaDb") {
+            packageName.set("pe.edu.upeu.pharmamobil.db")
+        }
     }
 }

@@ -8,12 +8,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pe.edu.upeu.pharmamobil.domain.model.Categoria
+import pe.edu.upeu.pharmamobil.domain.repository.CategoriaRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.ActualizarCategoriaUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.EliminarCategoriaUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.ListarCategoriasUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarCategoriaUseCase
 
 class CategoriaViewModel(
+    private val categoriaRepository: CategoriaRepository,
     private val listarCategoriasUseCase: ListarCategoriasUseCase,
     private val registrarCategoriaUseCase: RegistrarCategoriaUseCase,
     private val actualizarCategoriaUseCase: ActualizarCategoriaUseCase,
@@ -24,19 +26,33 @@ class CategoriaViewModel(
     val uiState: StateFlow<CategoriaUiState> = _uiState.asStateFlow()
 
     init {
+        // 1. Nos suscribimos al Flow local para que la UI se actualice sola en tiempo real (Offline-First)
+        viewModelScope.launch {
+            categoriaRepository.observar().collect { listaLocal ->
+                _uiState.update { it.copy(categorias = listaLocal) }
+            }
+        }
+        // 2. Cargamos del servidor / sincronizamos al iniciar
         cargarCategorias()
     }
 
     fun cargarCategorias() {
         viewModelScope.launch {
             _uiState.update { it.copy(estaCargando = true, mensajeError = null) }
+
+            // Intentamos sincronizar con la red de fondo usando el repositorio o caso de uso
+            runCatching { categoriaRepository.sincronizar() }
+
             listarCategoriasUseCase()
                 .onSuccess { lista ->
                     _uiState.update { it.copy(categorias = lista, estaCargando = false) }
                 }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(estaCargando = false, mensajeError = error.message ?: "Error al cargar categorías")
+                        it.copy(
+                            estaCargando = false,
+                            mensajeError = error.message ?: "Sin conexión: mostrando datos locales"
+                        )
                     }
                 }
         }
@@ -55,13 +71,14 @@ class CategoriaViewModel(
 
                 val resultado = if (!esEdicion) {
                     registrarCategoriaUseCase(categoria)
+                    Result.success(categoria)
                 } else {
                     actualizarCategoriaUseCase(categoria)
                 }
 
                 resultado.fold(
                     onSuccess = {
-                        val mensaje = if (!esEdicion) "Categoría registrada correctamente" else "Categoría actualizada correctamente"
+                        val mensaje = if (!esEdicion) "Categoría registrada correctamente (offline/online)" else "Categoría actualizada correctamente"
                         _uiState.update {
                             it.copy(
                                 categoriaEditandoId = null,
@@ -115,7 +132,6 @@ class CategoriaViewModel(
 
     fun eliminarCategoria(id: Long) {
         viewModelScope.launch {
-            // 1. Reiniciamos ambos mensajes antes de la llamada
             _uiState.update {
                 it.copy(
                     estaCargando = true,
@@ -141,7 +157,7 @@ class CategoriaViewModel(
                     _uiState.update {
                         it.copy(
                             estaCargando = false,
-                            mensajeExito = null, // CLAVE: Desaparece el texto verde inmediatamente
+                            mensajeExito = null,
                             mensajeError = error.message ?: "No se puede eliminar la categoría porque tiene productos asociados"
                         )
                     }
