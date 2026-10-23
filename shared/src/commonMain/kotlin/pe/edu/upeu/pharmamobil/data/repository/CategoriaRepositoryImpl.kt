@@ -2,6 +2,7 @@ package pe.edu.upeu.pharmamobil.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import pe.edu.upeu.pharmamobil.data.local.CategoriaLocal
+import pe.edu.upeu.pharmamobil.data.local.SincronizacionPreferences
 import pe.edu.upeu.pharmamobil.data.mapper.toDomain
 import pe.edu.upeu.pharmamobil.data.mapper.toRequest
 import pe.edu.upeu.pharmamobil.data.remote.CategoriaApiService
@@ -13,10 +14,14 @@ import pe.edu.upeu.pharmamobil.domain.repository.CategoriaRepository
 
 class CategoriaRepositoryImpl(
     private val local: CategoriaLocal,
-    private val api: CategoriaApiService
+    private val api: CategoriaApiService,
+    private val preferenciasSync: SincronizacionPreferences = SincronizacionPreferences() // <-- Inyectado o instanciado
 ) : CategoriaRepository {
 
     override fun observar(): Flow<List<Categoria>> = local.observar()
+
+    // Método adicional para exponer el texto de la antigüedad a la UI
+    fun obtenerTextoAntiguedad(): String = preferenciasSync.obtenerTextoUltimaSincronizacion()
 
     override suspend fun listar(): Result<List<Categoria>> = ejecutarLlamada {
         try {
@@ -31,14 +36,9 @@ class CategoriaRepositoryImpl(
         api.obtener(id).toDomain()
     }
 
-    // ATENCIÓN AQUÍ: Devuelve Categoria directamente para coincidir con la interfaz
     override suspend fun registrar(categoria: Categoria): Categoria {
-        // 1. Guardamos localmente como pendiente con ID negativo para respuesta instantánea en UI
         val guardado = local.guardarPendiente(categoria)
-
-        // 2. Intentamos sincronizar con la red de forma segura
         intentar { sincronizar() }
-
         return guardado
     }
 
@@ -57,6 +57,9 @@ class CategoriaRepositoryImpl(
         subirPendientes()
         val listaRemota = api.listar().map { it.toDomain() }
         local.reemplazarSincronizados(listaRemota)
+
+        // ¡REGISTRAMOS EL ÉXITO DE LA SINCRONIZACIÓN AQUÍ!
+        preferenciasSync.registrarSincronizacionExitosa()
     }
 
     private suspend fun subirPendientes() {
@@ -70,12 +73,12 @@ class CategoriaRepositoryImpl(
             bloque()
         } catch (e: ErrorApiException) {
             if (e.errorApi is ErrorApi.SinConexion || e.errorApi is ErrorApi.TiempoAgotado) {
-                // Silenciamos el error de red para respetar la filosofía offline-first
+                // Silenciamos el error de red
             } else {
                 throw e
             }
         } catch (e: Exception) {
-            // Excepción genérica de red
+            // Excepción genérica
         }
     }
 }

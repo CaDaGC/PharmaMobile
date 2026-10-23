@@ -54,7 +54,15 @@ fun CategoriaScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Indicador de la última sincronización (Producto 3)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = uiState.ultimaSincronizacion,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Formulario de ingreso / edición
         Card(

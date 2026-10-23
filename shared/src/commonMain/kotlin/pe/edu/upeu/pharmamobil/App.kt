@@ -39,6 +39,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -93,19 +95,31 @@ private val ScreenSaver = Saver<Screen, Int>(
 @Composable
 fun App() = KoinContext {
 
-    // Inyectamos el repositorio de autenticación mediante Koin
+    // Inyectamos el almacenamiento seguro mediante Koin
     val almacen: AlmacenSeguro = koinInject()
+
+    // Observamos de forma reactiva si la sesión sigue siendo válida globalmente
+    val sessionValid by SessionManager.isSessionValid.collectAsState()
 
     // Verificamos si ya existe un token guardado de forma segura al abrir la app
     var sesionIniciada by rememberSaveable {
         mutableStateOf(almacen.leerToken() != null)
     }
 
-    if (!sesionIniciada) {
+    // Efecto que reacciona de inmediato si el token expira (401) en cualquier petición
+    LaunchedEffect(sessionValid) {
+        if (!sessionValid) {
+            sesionIniciada = false
+        }
+    }
+
+    if (!sesionIniciada || !sessionValid) {
         val loginViewModel: LoginViewModel = koinViewModel()
         LoginScreen(
             viewModel = loginViewModel,
             onLoginExitoso = {
+                // Restablecemos la validez en SessionManager al loguearnos con éxito
+                SessionManager.resetSession()
                 sesionIniciada = true
             }
         )
@@ -173,6 +187,7 @@ fun App() = KoinContext {
                         BotonCerrarSesion(
                             onCerrarSesion = {
                                 almacen.borrarToken()
+                                SessionManager.invalidateSession()
                                 sesionIniciada = false
                             }
                         )

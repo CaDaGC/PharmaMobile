@@ -58,6 +58,7 @@ class CategoriaLocal(base: PharmaDb) {
                     estado = if (it.estado) 1L else 0L,
                     pendiente = 0L
                 )
+                consultas.borrarPendientePorNombre(it.nombre)
             }
         }
     }

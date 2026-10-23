@@ -15,7 +15,8 @@ data class CategoriaUiState(
     val categoriaEditandoId: Long? = null,
     val estaCargando: Boolean = false,
     val mensajeExito: String? = null,
-    val mensajeError: String? = null
+    val mensajeError: String? = null,
+    val ultimaSincronizacion: String = "Nunca sincronizado"
 )
 
 sealed interface Fase {

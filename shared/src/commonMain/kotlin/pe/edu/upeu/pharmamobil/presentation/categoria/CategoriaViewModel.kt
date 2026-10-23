@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import pe.edu.upeu.pharmamobil.data.repository.CategoriaRepositoryImpl
 import pe.edu.upeu.pharmamobil.domain.model.Categoria
 import pe.edu.upeu.pharmamobil.domain.repository.CategoriaRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.ActualizarCategoriaUseCase
@@ -36,12 +37,20 @@ class CategoriaViewModel(
         cargarCategorias()
     }
 
+    private fun actualizarTextoAntiguedad() {
+        val repoImpl = categoriaRepository as? CategoriaRepositoryImpl
+        val texto = repoImpl?.obtenerTextoAntiguedad() ?: "Nunca sincronizado"
+        _uiState.update { it.copy(ultimaSincronizacion = texto) }
+    }
+
     fun cargarCategorias() {
         viewModelScope.launch {
             _uiState.update { it.copy(estaCargando = true, mensajeError = null) }
 
-            // Intentamos sincronizar con la red de fondo usando el repositorio o caso de uso
+            // Intentamos sincronizar con la red de fondo usando el repositorio
             runCatching { categoriaRepository.sincronizar() }
+
+            actualizarTextoAntiguedad()
 
             listarCategoriasUseCase()
                 .onSuccess { lista ->
@@ -79,6 +88,7 @@ class CategoriaViewModel(
                 resultado.fold(
                     onSuccess = {
                         val mensaje = if (!esEdicion) "Categoría registrada correctamente (offline/online)" else "Categoría actualizada correctamente"
+                        actualizarTextoAntiguedad()
                         _uiState.update {
                             it.copy(
                                 categoriaEditandoId = null,
@@ -144,6 +154,7 @@ class CategoriaViewModel(
 
             resultado.fold(
                 onSuccess = {
+                    actualizarTextoAntiguedad()
                     _uiState.update {
                         it.copy(
                             estaCargando = false,

@@ -19,5 +19,8 @@ VALUES (?, ?, ?, ?, ?);
 borrarSincronizados:
 DELETE FROM categoria WHERE pendiente = 0;
 
+borrarPendientePorNombre:
+DELETE FROM categoria WHERE pendiente = 1 AND nombre = ?;
+
 siguienteIdLocal:
 SELECT COALESCE(MIN(id), 0) FROM categoria;

@@ -73,11 +73,15 @@ kotlin {
             implementation("io.ktor:ktor-client-auth:${ktor}")
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation("io.ktor:ktor-client-mock:${ktor}")
+        }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
         }
         iosMain.dependencies {
             implementation("io.ktor:ktor-client-darwin:$ktor")
