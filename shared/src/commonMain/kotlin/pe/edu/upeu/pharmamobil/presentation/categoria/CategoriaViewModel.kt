@@ -3,177 +3,113 @@ package pe.edu.upeu.pharmamobil.presentation.categoria
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pe.edu.upeu.pharmamobil.data.repository.CategoriaRepositoryImpl
 import pe.edu.upeu.pharmamobil.domain.model.Categoria
-import pe.edu.upeu.pharmamobil.domain.repository.CategoriaRepository
-import pe.edu.upeu.pharmamobil.domain.usecase.ActualizarCategoriaUseCase
-import pe.edu.upeu.pharmamobil.domain.usecase.EliminarCategoriaUseCase
-import pe.edu.upeu.pharmamobil.domain.usecase.ListarCategoriasUseCase
-import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarCategoriaUseCase
+import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 
 class CategoriaViewModel(
-    private val categoriaRepository: CategoriaRepository,
-    private val listarCategoriasUseCase: ListarCategoriasUseCase,
-    private val registrarCategoriaUseCase: RegistrarCategoriaUseCase,
-    private val actualizarCategoriaUseCase: ActualizarCategoriaUseCase,
-    private val eliminarCategoriaUseCase: EliminarCategoriaUseCase
+    private val repository: CategoriaRepositoryImpl
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CategoriaUiState())
-    val uiState: StateFlow<CategoriaUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<CategoriaUiState> = _uiState.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = CategoriaUiState()
+    )
 
     init {
-        // 1. Nos suscribimos al Flow local para que la UI se actualice sola en tiempo real (Offline-First)
-        viewModelScope.launch {
-            categoriaRepository.observar().collect { listaLocal ->
-                _uiState.update { it.copy(categorias = listaLocal) }
-            }
-        }
-        // 2. Cargamos del servidor / sincronizamos al iniciar
-        cargarCategorias()
+        observarCategorias()
     }
 
-    private fun actualizarTextoAntiguedad() {
-        val repoImpl = categoriaRepository as? CategoriaRepositoryImpl
-        val texto = repoImpl?.obtenerTextoAntiguedad() ?: "Nunca sincronizado"
-        _uiState.update { it.copy(ultimaSincronizacion = texto) }
-    }
-
-    fun cargarCategorias() {
+    private fun observarCategorias() {
         viewModelScope.launch {
-            _uiState.update { it.copy(estaCargando = true, mensajeError = null) }
-
-            // Intentamos sincronizar con la red de fondo usando el repositorio
-            runCatching { categoriaRepository.sincronizar() }
-
-            actualizarTextoAntiguedad()
-
-            listarCategoriasUseCase()
-                .onSuccess { lista ->
-                    _uiState.update { it.copy(categorias = lista, estaCargando = false) }
-                }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
-                            estaCargando = false,
-                            mensajeError = error.message ?: "Sin conexión: mostrando datos locales"
-                        )
-                    }
-                }
-        }
-    }
-
-    fun guardarCategoria(nombre: String, descripcion: String, onSuccessCallback: () -> Unit = {}) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(estaCargando = true, mensajeError = null, mensajeExito = null) }
-            try {
-                val esEdicion = _uiState.value.categoriaEditandoId != null
-                val categoria = Categoria(
-                    id = _uiState.value.categoriaEditandoId ?: 0L,
-                    nombre = nombre.trim(),
-                    descripcion = descripcion.trim()
-                )
-
-                val resultado = if (!esEdicion) {
-                    registrarCategoriaUseCase(categoria)
-                    Result.success(categoria)
-                } else {
-                    actualizarCategoriaUseCase(categoria)
-                }
-
-                resultado.fold(
-                    onSuccess = {
-                        val mensaje = if (!esEdicion) "Categoría registrada correctamente (offline/online)" else "Categoría actualizada correctamente"
-                        actualizarTextoAntiguedad()
-                        _uiState.update {
-                            it.copy(
-                                categoriaEditandoId = null,
-                                estaCargando = false,
-                                mensajeExito = mensaje,
-                                mensajeError = null
-                            )
-                        }
-                        onSuccessCallback()
-                        cargarCategorias()
-                    },
-                    onFailure = { error ->
-                        _uiState.update {
-                            it.copy(
-                                estaCargando = false,
-                                mensajeError = error.message ?: "El nombre debe tener al menos 3 caracteres",
-                                mensajeExito = null
-                            )
-                        }
-                    }
-                )
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        estaCargando = false,
-                        mensajeError = e.message ?: "Ocurrió un error inesperado",
-                        mensajeExito = null
+            repository.observar().collect { categorias ->
+                _uiState.update { current ->
+                    current.copy(
+                        categorias = categorias,
+                        ultimaSincronizacion = repository.obtenerTextoAntiguedad(),
+                        pendientesCount = categorias.count { it.id < 0L } // IDs locales negativos indican pendientes
                     )
                 }
             }
         }
     }
 
+    fun limpiarMensajes() {
+        _uiState.update { it.copy(mensajeError = null, mensajeExito = null) }
+    }
+
     fun prepararEdicion(categoria: Categoria) {
-        _uiState.update {
-            it.copy(categoriaEditandoId = categoria.id, mensajeError = null, mensajeExito = null)
-        }
+        _uiState.update { it.copy(categoriaEditandoId = categoria.id) }
+        limpiarMensajes()
     }
 
     fun cancelarEdicion() {
-        _uiState.update {
-            it.copy(categoriaEditandoId = null, mensajeError = null, mensajeExito = null)
-        }
+        _uiState.update { it.copy(categoriaEditandoId = null) }
+        limpiarMensajes()
     }
 
-    fun limpiarMensajes() {
-        _uiState.update {
-            it.copy(mensajeError = null, mensajeExito = null)
+    fun guardarCategoria(nombre: String, descripcion: String, onSuccessCallback: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(estaCargando = true) }
+            limpiarMensajes()
+            try {
+                val idActual = _uiState.value.categoriaEditandoId
+                if (idActual == null) {
+                    val nueva = Categoria(nombre = nombre, descripcion = descripcion, estado = true)
+                    repository.registrar(nueva)
+                    _uiState.update { it.copy(mensajeExito = "Categoría guardada localmente/sincronizada") }
+                } else {
+                    val editada = Categoria(id = idActual, nombre = nombre, descripcion = descripcion, estado = true)
+                    repository.actualizar(editada)
+                    _uiState.update { it.copy(mensajeExito = "Categoría actualizada correctamente") }
+                }
+                _uiState.update { it.copy(categoriaEditandoId = null) }
+                onSuccessCallback()
+            } catch (e: ErrorApiException) {
+                _uiState.update { it.copy(mensajeError = e.message ?: "Error al procesar la solicitud") }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(mensajeError = e.message ?: "Error desconocido") }
+            } finally {
+                _uiState.update { it.copy(estaCargando = false) }
+            }
         }
     }
 
     fun eliminarCategoria(id: Long) {
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    estaCargando = true,
-                    mensajeError = null,
-                    mensajeExito = null
-                )
+            _uiState.update { it.copy(estaCargando = true) }
+            limpiarMensajes()
+            try {
+                repository.eliminar(id)
+                _uiState.update { it.copy(mensajeExito = "Categoría eliminada correctamente") }
+            } catch (e: ErrorApiException) {
+                _uiState.update { it.copy(mensajeError = e.message ?: "Error al eliminar") }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(mensajeError = e.message ?: "Error desconocido") }
+            } finally {
+                _uiState.update { it.copy(estaCargando = false) }
             }
+        }
+    }
 
-            val resultado = eliminarCategoriaUseCase(id)
-
-            resultado.fold(
-                onSuccess = {
-                    actualizarTextoAntiguedad()
-                    _uiState.update {
-                        it.copy(
-                            estaCargando = false,
-                            mensajeExito = "Categoría eliminada correctamente",
-                            mensajeError = null
-                        )
-                    }
-                    cargarCategorias()
-                },
-                onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            estaCargando = false,
-                            mensajeExito = null,
-                            mensajeError = error.message ?: "No se puede eliminar la categoría porque tiene productos asociados"
-                        )
-                    }
-                }
-            )
+    fun sincronizarManual() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(enCursoSync = true) }
+            try {
+                repository.sincronizar()
+                _uiState.update { it.copy(mensajeExito = "Sincronización completada con éxito") }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(mensajeError = "Error al sincronizar: ${e.message}") }
+            } finally {
+                _uiState.update { it.copy(enCursoSync = false) }
+            }
         }
     }
 }
