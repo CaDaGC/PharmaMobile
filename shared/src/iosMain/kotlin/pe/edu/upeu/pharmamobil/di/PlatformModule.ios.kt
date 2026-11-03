@@ -13,7 +13,7 @@ import pe.edu.upeu.pharmamobil.domain.platform.Compartidor
 import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
 import pe.edu.upeu.pharmamobil.platform.CompartidorIos
 
-val iosModule = module {
+actual val platformModule: Module = module {
     single<Compartidor> { CompartidorIos() }
     single<AlmacenSeguro> { AlmacenSeguroIos() }
     single<AuthRepository> { AuthRepositorioRest(get(), get()) }

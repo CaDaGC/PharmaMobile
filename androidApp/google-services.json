@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "588332067455",
+    "project_id": "pharmamobil-3007c",
+    "storage_bucket": "pharmamobil-3007c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:588332067455:android:7ae6edebbf713f28feed4a",
+        "android_client_info": {
+          "package_name": "pe.edu.upeu.pharmamobil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdbQH4CCCAjigd_DP5jCuDikwNXu2U5KU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
