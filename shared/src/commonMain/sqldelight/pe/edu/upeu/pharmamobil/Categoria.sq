@@ -11,7 +11,7 @@ CREATE TABLE categoria (
 listarTodas:
 SELECT * FROM categoria ORDER BY nombre ASC;
 
-listarPendientesPorEnviar:
+listarPendientes:
 SELECT * FROM categoria WHERE pendiente = 1 AND intentos < :maxIntentos;
 
 contarPendientes:
@@ -21,7 +21,7 @@ contarFallidas:
 SELECT COUNT(*) FROM categoria WHERE pendiente = 1 AND intentos >= :maxIntentos;
 
 sumarIntento:
-UPDATE categoria SET intentos = intentos + 1, ultimoError = ? WHERE id = ?;
+UPDATE categoria SET intentos = intentos + 1, ultimoError = :ultimoError WHERE id = :id;
 
 marcarComoFallida:
 UPDATE categoria SET intentos = :intentos, ultimoError = :error WHERE id = :id;

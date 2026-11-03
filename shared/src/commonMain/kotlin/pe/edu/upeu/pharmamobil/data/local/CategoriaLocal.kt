@@ -3,63 +3,68 @@ package pe.edu.upeu.pharmamobil.data.local
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import pe.edu.upeu.pharmamobil.data.mapper.toDomain
 import pe.edu.upeu.pharmamobil.db.PharmaDb
 import pe.edu.upeu.pharmamobil.domain.model.Categoria
 
-class CategoriaLocal(base: PharmaDb) {
-    private val consultas = base.categoriaQueries
+class CategoriaLocal(db: PharmaDb) {
+    private val queries = db.categoriaQueries
 
     fun observar(): Flow<List<Categoria>> =
-        consultas.listarTodas { id, nombre, descripcion, estado, pendiente ->
-            Categoria(
-                id = id,
-                nombre = nombre,
-                descripcion = descripcion,
-                estado = estado == 1L // Convierte el Long de SQLite a Boolean
-            )
-        }.asFlow()
-            .mapToList(Dispatchers.Default)
+        queries.listarTodas { id, nombre, descripcion, estado, pendiente, intentos, ultimoError ->
+            Categoria(id = id, nombre = nombre, descripcion = descripcion, estado = estado == 1L)
+        }.asFlow().mapToList(Dispatchers.IO)
 
-    fun pendientes(): List<Categoria> =
-        consultas.listarPendientes { id, nombre, descripcion, estado, pendiente ->
-            Categoria(
-                id = id,
-                nombre = nombre,
-                descripcion = descripcion,
-                estado = estado == 1L
-            )
+    fun listarTodas(): List<Categoria> =
+        queries.listarTodas { id, nombre, descripcion, estado, pendiente, intentos, ultimoError ->
+            Categoria(id = id, nombre = nombre, descripcion = descripcion, estado = estado == 1L)
         }.executeAsList()
 
-    fun guardarPendiente(categoria: Categoria): Categoria {
-        val menor = consultas.siguienteIdLocal().executeAsOne() ?: 0L
-        val idLocal = minOf(menor, 0L) - 1L
-        val local = categoria.copy(id = idLocal)
+    fun listarPendientes(maxIntentos: Long): List<pe.edu.upeu.pharmamobil.Categoria> =
+        queries.listarPendientes(maxIntentos).executeAsList()
 
-        consultas.insertar(
-            id = local.id,
-            nombre = local.nombre,
-            descripcion = local.descripcion,
-            estado = if (local.estado) 1L else 0L,
-            pendiente = 1L
+    fun guardarPendiente(categoria: Categoria): Categoria {
+        val siguienteId = queries.siguienteIdLocal().executeAsOneOrNull() ?: 0L
+        val idLocal = if (siguienteId > 0L) siguienteId - 1L else -1L
+
+        queries.insertar(
+            id = idLocal,
+            nombre = categoria.nombre,
+            descripcion = categoria.descripcion,
+            estado = if (categoria.estado) 1L else 0L,
+            pendiente = 1L,
+            intentos = 0L,
+            ultimoError = null
         )
-        return local
+        return categoria.copy(id = idLocal)
     }
 
-    fun reemplazarSincronizados(categorias: List<Categoria>) {
-        consultas.transaction {
-            consultas.borrarSincronizados()
-            categorias.forEach {
-                consultas.insertar(
-                    id = it.id,
-                    nombre = it.nombre,
-                    descripcion = it.descripcion,
-                    estado = if (it.estado) 1L else 0L,
-                    pendiente = 0L
-                )
-                consultas.borrarPendientePorNombre(it.nombre)
-            }
+    fun sumarIntento(id: Long, ultimoError: String) {
+        queries.sumarIntento(ultimoError = ultimoError, id = id)
+    }
+
+    fun marcarComoFallida(id: Long, intentos: Long, error: String) {
+        queries.marcarComoFallida(intentos = intentos, error = error, id = id)
+    }
+
+    fun confirmarSincronizacion(idLocal: Long, idServidor: Long) {
+        queries.confirmarSincronizacion(idServidor = idServidor, idLocal = idLocal)
+    }
+
+    fun reemplazarSincronizados(remotas: List<Categoria>) {
+        queries.reemplazarSincronizados()
+        remotas.forEach { cat ->
+            queries.insertar(
+                id = cat.id,
+                nombre = cat.nombre,
+                descripcion = cat.descripcion,
+                estado = if (cat.estado) 1L else 0L,
+                pendiente = 0L,
+                intentos = 0L,
+                ultimoError = null
+            )
         }
     }
 }
