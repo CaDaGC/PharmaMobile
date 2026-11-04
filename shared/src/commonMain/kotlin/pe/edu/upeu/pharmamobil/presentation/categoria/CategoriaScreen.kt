@@ -14,12 +14,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -37,7 +39,8 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun CategoriaScreen(
-    viewModel: CategoriaViewModel
+    viewModel: CategoriaViewModel,
+    onSolicitarPermisoClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -49,18 +52,46 @@ fun CategoriaScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Gestión de Categorías",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Gestión de Categorías",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            // Botón para Sincronización Manual (Paso 3 y 4)
+            IconButton(onClick = { viewModel.sincronizarManual() }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Sincronizar Manual")
+            }
+        }
 
-        // Indicador de la última sincronización (Producto 3)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = uiState.ultimaSincronizacion,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary
-        )
+
+        // Panel de Estado Offline / Antigüedad y Pendientes (Requerido para captura)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Sincronización: ${uiState.ultimaSincronizacion}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Cambios pendientes de subida: ${uiState.pendientesCount}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (uiState.pendientesCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary
+                )
+                if (uiState.enCursoSync) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -168,7 +199,22 @@ fun CategoriaScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Botón para probar la gestión de permisos nativos de notificaciones
+        Button(
+            onClick = {
+                // Simulación o acción visual para el reporte de permisos
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary
+            )
+        ) {
+            Text("Gestionar Permiso de Notificaciones")
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Indicador de Carga
         if (uiState.estaCargando) {
@@ -178,7 +224,7 @@ fun CategoriaScreen(
             ) {
                 CircularProgressIndicator()
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         // Listado de Categorías
@@ -215,6 +261,14 @@ fun CategoriaScreen(
                                     text = categoria.descripcion,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.Gray
+                                )
+                            }
+                            // Identificador visual de elementos pendientes locales (IDs negativos)
+                            if (categoria.id < 0) {
+                                Text(
+                                    text = "Pendiente de sincronizar local",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             }
                         }
