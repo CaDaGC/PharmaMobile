@@ -1,6 +1,9 @@
 package pe.edu.upeu.pharmamobil.data.repository
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.Flow
 import pe.edu.upeu.pharmamobil.data.local.CategoriaLocal
 import pe.edu.upeu.pharmamobil.data.local.SincronizacionPreferences
@@ -25,6 +28,8 @@ class CategoriaRepositoryImpl(
         private const val MAX_INTENTOS = 5L
     }
 
+    private val mutexSync = Mutex()
+
     override fun observar(): Flow<List<Categoria>> = local.observar()
 
     fun obtenerTextoAntiguedad(): String = preferenciasSync.obtenerTextoUltimaSincronizacion()
@@ -32,6 +37,8 @@ class CategoriaRepositoryImpl(
     override suspend fun listar(): Result<List<Categoria>> = ejecutarLlamada {
         try {
             sincronizar()
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             // Ignorar red caída para proveer datos locales
         }
@@ -46,6 +53,8 @@ class CategoriaRepositoryImpl(
         val guardado = local.guardarPendiente(categoria)
         try {
             sincronizar()
+        } catch (e: CancellationException) {
+            throw e
         } catch (_: Exception) {
             // Silenciar errores offline
         }
@@ -63,25 +72,25 @@ class CategoriaRepositoryImpl(
         sincronizar()
     }
 
-    override suspend fun sincronizar() {
+    override suspend fun sincronizar() = mutexSync.withLock {
         subirPendientesRefinado()
-        val listaRemota = api.listar().map { it.toDomain() }
-        local.reemplazarSincronizados(listaRemota)
+        val listaRemota = ejecutarLlamada { api.listar().map { it.toDomain() } }.getOrThrow()
         preferenciasSync.registrarSincronizacionExitosa()
+        local.reemplazarSincronizados(listaRemota)
     }
 
     private suspend fun subirPendientesRefinado() {
         val pendientes = local.listarPendientes(MAX_INTENTOS)
         pendientes.forEach { fila ->
             val resultadoEnvio = try {
-                val respuestaDto = api.crear(
+                val respuestaDto = ejecutarLlamada { api.crear(
                     CategoriaRequestDto(
                         nombre = fila.nombre,
                         descripcion = fila.descripcion,
                         estado = fila.estado == 1L
                     )
-                )
-                ResultadoEnvio.Exito(respuestaDto.id ?: 0L)
+                ) }.getOrThrow()
+                ResultadoEnvio.Exito(requireNotNull(respuestaDto.id))
             } catch (e: ErrorApiException) {
                 when (e.errorApi) {
                     is ErrorApi.SinConexion, is ErrorApi.TiempoAgotado, is ErrorApi.Servidor ->
@@ -89,6 +98,8 @@ class CategoriaRepositoryImpl(
                     else ->
                         ResultadoEnvio.Permanente(e.message ?: "Error permanente de validación")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 ResultadoEnvio.Transitorio(e.message ?: "Excepción desconocida")
             }
@@ -103,7 +114,7 @@ class CategoriaRepositoryImpl(
                 is ResultadoEnvio.Permanente -> {
                     local.marcarComoFallida(
                         id = fila.id,
-                        intentos = fila.intentos ?: MAX_INTENTOS,
+                        intentos = MAX_INTENTOS,
                         error = resultadoEnvio.motivo
                     )
                 }

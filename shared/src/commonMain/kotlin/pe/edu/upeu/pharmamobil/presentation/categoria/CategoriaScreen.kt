@@ -31,17 +31,25 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import pe.edu.upeu.pharmamobil.domain.permiso.EstadoPermiso
+import pe.edu.upeu.pharmamobil.domain.permiso.GestorPermisos
+import pe.edu.upeu.pharmamobil.domain.permiso.Permiso
 
 @Composable
 fun CategoriaScreen(
     viewModel: CategoriaViewModel,
-    onSolicitarPermisoClick: () -> Unit = {}
+    gestorPermisos: GestorPermisos? = null
 ) {
+    val scope = rememberCoroutineScope()
+    var estadoNotificaciones by remember { mutableStateOf<EstadoPermiso?>(null) }
+    var solicitandoPermiso by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
 
     var nombreState by remember { mutableStateOf("") }
@@ -62,7 +70,10 @@ fun CategoriaScreen(
                 style = MaterialTheme.typography.headlineMedium
             )
             // Botón para Sincronización Manual (Paso 3 y 4)
-            IconButton(onClick = { viewModel.sincronizarManual() }) {
+            IconButton(
+                onClick = { viewModel.sincronizarManual() },
+                enabled = !uiState.enCursoSync && !uiState.estaCargando
+            ) {
                 Icon(Icons.Default.Refresh, contentDescription = "Sincronizar Manual")
             }
         }
@@ -79,6 +90,10 @@ fun CategoriaScreen(
                     text = "Sincronización: ${uiState.ultimaSincronizacion}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Categorías sincronizadas: ${uiState.categorias.count { !it.pendiente }}",
+                    style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -121,7 +136,7 @@ fun CategoriaScreen(
                         }
                     },
                     label = { Text("Nombre") },
-                    isError = uiState.mensajeError != null,
+                    isError = uiState.campoError == "nombre",
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -136,6 +151,7 @@ fun CategoriaScreen(
                         }
                     },
                     label = { Text("Descripción") },
+                    isError = uiState.campoError == "descripcion",
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -191,7 +207,7 @@ fun CategoriaScreen(
                                 }
                             )
                         },
-                        enabled = !uiState.estaCargando
+                        enabled = !uiState.estaCargando && !uiState.enCursoSync
                     ) {
                         Text(if (uiState.categoriaEditandoId == null) "Guardar" else "Actualizar")
                     }
@@ -201,17 +217,35 @@ fun CategoriaScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Botón para probar la gestión de permisos nativos de notificaciones
-        Button(
-            onClick = {
-                // Simulación o acción visual para el reporte de permisos
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondary
-            )
-        ) {
-            Text("Gestionar Permiso de Notificaciones")
+        if (gestorPermisos != null) {
+            Button(
+                onClick = {
+                    solicitandoPermiso = true
+                    scope.launch {
+                        try {
+                            estadoNotificaciones = gestorPermisos.solicitar(Permiso.NOTIFICACIONES)
+                        } finally {
+                            solicitandoPermiso = false
+                        }
+                    }
+                },
+                enabled = !solicitandoPermiso,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Gestionar Permiso de Notificaciones")
+            }
+
+            when (estadoNotificaciones) {
+                EstadoPermiso.Concedido -> Text("Permiso de notificaciones concedido")
+                EstadoPermiso.Denegado -> Text("Permiso de notificaciones denegado. Puedes volver a solicitarlo.")
+                EstadoPermiso.DenegadoParaSiempre -> {
+                    Text("Para permitir las notificaciones, habilítalas en Ajustes.")
+                    OutlinedButton(onClick = gestorPermisos::abrirAjustes) {
+                        Text("Abrir Ajustes")
+                    }
+                }
+                null -> Unit
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -263,8 +297,11 @@ fun CategoriaScreen(
                                     color = Color.Gray
                                 )
                             }
-                            // Identificador visual de elementos pendientes locales (IDs negativos)
-                            if (categoria.id < 0) {
+                            Text(
+                                text = if (categoria.pendiente) "ID local: ${categoria.id}" else "ID: ${categoria.id}",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                            if (categoria.pendiente) {
                                 Text(
                                     text = "Pendiente de sincronizar local",
                                     style = MaterialTheme.typography.labelSmall,

@@ -36,5 +36,8 @@ insertar:
 INSERT OR REPLACE INTO categoria
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
+idsPendientes:
+SELECT id FROM categoria WHERE pendiente = 1;
+
 siguienteIdLocal:
 SELECT COALESCE(MIN(id), 0) FROM categoria;

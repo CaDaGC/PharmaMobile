@@ -6,6 +6,7 @@ sealed interface ErrorApi {
         val errores: Map<String, String> = emptyMap()
     ) : ErrorApi
 
+    object SinPrivilegio : ErrorApi
     object NoEncontrado : ErrorApi
     data class Conflicto(val mensaje: String) : ErrorApi
     object Servidor : ErrorApi
@@ -20,6 +21,7 @@ class ErrorApiException(
     when (errorApi) {
         is ErrorApi.Validacion -> errorApi.mensajeCustom
         is ErrorApi.Conflicto -> errorApi.mensaje
+        ErrorApi.SinPrivilegio -> "HTTP 403: No tienes permiso para modificar categorías"
         ErrorApi.NoEncontrado -> "Recurso no encontrado"
         ErrorApi.Servidor -> mensajeDetalle ?: "Error interno del servidor"
         ErrorApi.TiempoAgotado -> "Tiempo de espera agotado"

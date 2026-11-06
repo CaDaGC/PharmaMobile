@@ -56,7 +56,7 @@ import org.koin.compose.KoinContext
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
-import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
+import pe.edu.upeu.pharmamobil.domain.permiso.GestorPermisos
 
 import pe.edu.upeu.pharmamobil.navigation.Screen
 import pe.edu.upeu.pharmamobil.presentation.auth.LoginScreen
@@ -93,7 +93,7 @@ private val ScreenSaver = Saver<Screen, Int>(
 )
 
 @Composable
-fun App() = KoinContext {
+fun App(gestorPermisos: GestorPermisos? = null) = KoinContext {
 
     // Inyectamos el almacenamiento seguro mediante Koin
     val almacen: AlmacenSeguro = koinInject()
@@ -244,6 +244,7 @@ fun App() = KoinContext {
 
                             Screen.Categorias ->
                                 CategoriaScreen(
+                                    gestorPermisos = gestorPermisos,
                                     viewModel = koinViewModel()
                                 )
 

@@ -4,7 +4,8 @@ data class Categoria(
     val id: Long = 0L,
     val nombre: String,
     val descripcion: String = "",
-    val estado: Boolean = true
+    val estado: Boolean = true,
+    val pendiente: Boolean = false
 ) {
     init {
         require(nombre.isNotBlank()) {

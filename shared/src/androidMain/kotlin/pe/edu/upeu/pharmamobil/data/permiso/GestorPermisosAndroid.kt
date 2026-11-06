@@ -32,6 +32,7 @@ class GestorPermisosAndroid(
     private val contexto: Context
 ) : GestorPermisos {
     var puente: PuentePermisos? = null
+    private val preferencias = contexto.getSharedPreferences("permisos", Context.MODE_PRIVATE)
 
     private fun nombreDeSistema(permiso: Permiso): String? = when (permiso) {
         Permiso.NOTIFICACIONES -> if (android.os.Build.VERSION.SDK_INT >= 33) {
@@ -47,7 +48,7 @@ class GestorPermisosAndroid(
         val actividad = puente?.actividad ?: return EstadoPermiso.Denegado
         val procedeExplicar = ActivityCompat.shouldShowRequestPermissionRationale(actividad, nombre)
 
-        return if (procedeExplicar) {
+        return if (procedeExplicar || !preferencias.getBoolean(nombre, false)) {
             EstadoPermiso.Denegado
         } else {
             EstadoPermiso.DenegadoParaSiempre
@@ -56,7 +57,12 @@ class GestorPermisosAndroid(
 
     override suspend fun solicitar(permiso: Permiso): EstadoPermiso {
         val nombre = nombreDeSistema(permiso) ?: return EstadoPermiso.Concedido
-        val concedido = puente?.pedir(nombre) ?: false
+        val puenteActual = puente ?: return EstadoPermiso.Denegado
+        if (estado(permiso) == EstadoPermiso.DenegadoParaSiempre) {
+            return EstadoPermiso.DenegadoParaSiempre
+        }
+        val concedido = puenteActual.pedir(nombre)
+        preferencias.edit().putBoolean(nombre, true).apply()
         return if (concedido) EstadoPermiso.Concedido else estado(permiso)
     }
 

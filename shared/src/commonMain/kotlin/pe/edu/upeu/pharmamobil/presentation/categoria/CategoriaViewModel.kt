@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import pe.edu.upeu.pharmamobil.data.repository.CategoriaRepositoryImpl
 import pe.edu.upeu.pharmamobil.domain.model.Categoria
+import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 
 class CategoriaViewModel(
@@ -34,7 +35,7 @@ class CategoriaViewModel(
                     current.copy(
                         categorias = categorias,
                         ultimaSincronizacion = repository.obtenerTextoAntiguedad(),
-                        pendientesCount = categorias.count { it.id < 0L } // IDs locales negativos indican pendientes
+                        pendientesCount = categorias.count { it.pendiente }
                     )
                 }
             }
@@ -42,7 +43,7 @@ class CategoriaViewModel(
     }
 
     fun limpiarMensajes() {
-        _uiState.update { it.copy(mensajeError = null, mensajeExito = null) }
+        _uiState.update { it.copy(mensajeError = null, mensajeExito = null, campoError = null) }
     }
 
     fun prepararEdicion(categoria: Categoria) {
@@ -67,13 +68,21 @@ class CategoriaViewModel(
                     _uiState.update { it.copy(mensajeExito = "Categoría guardada localmente/sincronizada") }
                 } else {
                     val editada = Categoria(id = idActual, nombre = nombre, descripcion = descripcion, estado = true)
-                    repository.actualizar(editada)
+                    repository.actualizar(editada).getOrThrow()
                     _uiState.update { it.copy(mensajeExito = "Categoría actualizada correctamente") }
                 }
                 _uiState.update { it.copy(categoriaEditandoId = null) }
                 onSuccessCallback()
             } catch (e: ErrorApiException) {
-                _uiState.update { it.copy(mensajeError = e.message ?: "Error al procesar la solicitud") }
+                val validacion = e.errorApi as? ErrorApi.Validacion
+                _uiState.update {
+                    it.copy(
+                        mensajeError = e.message ?: "Error al procesar la solicitud",
+                        campoError = validacion?.errores?.keys?.firstOrNull()
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                _uiState.update { it.copy(mensajeError = e.message, campoError = "nombre") }
             } catch (e: Exception) {
                 _uiState.update { it.copy(mensajeError = e.message ?: "Error desconocido") }
             } finally {
@@ -87,10 +96,12 @@ class CategoriaViewModel(
             _uiState.update { it.copy(estaCargando = true) }
             limpiarMensajes()
             try {
-                repository.eliminar(id)
+                repository.eliminar(id).getOrThrow()
                 _uiState.update { it.copy(mensajeExito = "Categoría eliminada correctamente") }
             } catch (e: ErrorApiException) {
                 _uiState.update { it.copy(mensajeError = e.message ?: "Error al eliminar") }
+            } catch (e: IllegalArgumentException) {
+                _uiState.update { it.copy(mensajeError = e.message, campoError = "nombre") }
             } catch (e: Exception) {
                 _uiState.update { it.copy(mensajeError = e.message ?: "Error desconocido") }
             } finally {
@@ -101,7 +112,7 @@ class CategoriaViewModel(
 
     fun sincronizarManual() {
         viewModelScope.launch {
-            _uiState.update { it.copy(enCursoSync = true) }
+            _uiState.update { it.copy(enCursoSync = true, mensajeError = null, mensajeExito = null, campoError = null) }
             try {
                 repository.sincronizar()
                 _uiState.update { it.copy(mensajeExito = "Sincronización completada con éxito") }

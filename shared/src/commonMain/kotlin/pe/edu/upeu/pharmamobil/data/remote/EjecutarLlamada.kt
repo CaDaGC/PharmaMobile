@@ -49,10 +49,11 @@ private suspend fun traducirCliente(e: ClientRequestException): ErrorApi {
                     ?: "El nombre de la categoría debe tener al menos 3 caracteres"
 
                 ErrorApi.Validacion(
-                    mensajeCustom = mensajeError,
+                    mensajeCustom = "HTTP 400: $mensajeError",
                     errores = cuerpoDto?.validationErrors.orEmpty()
                 )
             }
+            403 -> ErrorApi.SinPrivilegio
             404 -> ErrorApi.NoEncontrado
             409 -> {
                 val mensajeError = cuerpoDto?.message

@@ -3,10 +3,8 @@ package pe.edu.upeu.pharmamobil.data.remote
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.DefaultRequest
-import io.ktor.client.plugins.HttpCallValidator
-import io.ktor.client.plugins.auth.Auth
-import io.ktor.client.plugins.auth.providers.BearerTokens
-import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -40,6 +38,8 @@ object HttpClientFactory {
         almacen: AlmacenSeguro,
         esDepuracion: Boolean
     ) {
+        expectSuccess = true
+
         install(ContentNegotiation) {
             json(Json {
                 prettyPrint = true
@@ -50,18 +50,11 @@ object HttpClientFactory {
         }
 
         install(DefaultRequest) {
+            val esLogin = url.encodedPath.trim('/').endsWith("auth/login")
             url("$BASE_URL/api/v1/")
             contentType(ContentType.Application.Json)
-        }
-
-        install(Auth) {
-            bearer {
-                loadTokens {
-                    almacen.leerToken()?.let { BearerTokens(it, "") }
-                }
-                sendWithoutRequest { peticion ->
-                    !peticion.url.encodedPath.contains("/auth/login")
-                }
+            if (!esLogin) {
+                almacen.leerToken()?.let { headers.append(HttpHeaders.Authorization, "Bearer $it") }
             }
         }
 
@@ -71,9 +64,12 @@ object HttpClientFactory {
             level = if (esDepuracion) LogLevel.HEADERS else LogLevel.NONE
             sanitizeHeader { nombre -> nombre == HttpHeaders.Authorization }
         }
-        install(HttpCallValidator) {
-            validateResponse { response ->
-                if (response.status == HttpStatusCode.Unauthorized) {
+        HttpResponseValidator {
+            handleResponseExceptionWithRequest { causa, solicitud ->
+                val respuesta = (causa as? ClientRequestException)?.response
+                if (respuesta?.status == HttpStatusCode.Unauthorized &&
+                    !solicitud.url.encodedPath.endsWith("/auth/login")
+                ) {
                     almacen.borrarToken()
                     pe.edu.upeu.pharmamobil.SessionManager.invalidateSession()
                 }
