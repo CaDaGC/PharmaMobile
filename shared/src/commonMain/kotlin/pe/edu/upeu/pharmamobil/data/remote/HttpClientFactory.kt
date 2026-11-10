@@ -22,21 +22,27 @@ import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
 object HttpClientFactory {
     const val BASE_URL = "http://10.0.2.2:8080"
 
-    fun create(engine: HttpClientEngine, almacen: AlmacenSeguro, esDepuracion: Boolean = true): HttpClient {
+    fun create(
+        engine: HttpClientEngine,
+        almacen: AlmacenSeguro,
+        esDepuracion: Boolean = true,
+        baseUrl: String = BASE_URL
+    ): HttpClient {
         return HttpClient(engine) {
-            configurarClient(almacen, esDepuracion)
+            configurarClient(almacen, esDepuracion, baseUrl)
         }
     }
 
     fun create(almacen: AlmacenSeguro, esDepuracion: Boolean = true): HttpClient {
         return HttpClient {
-            configurarClient(almacen, esDepuracion)
+            configurarClient(almacen, esDepuracion, BASE_URL)
         }
     }
 
     private fun io.ktor.client.HttpClientConfig<*>.configurarClient(
         almacen: AlmacenSeguro,
-        esDepuracion: Boolean
+        esDepuracion: Boolean,
+        baseUrl: String
     ) {
         expectSuccess = true
 
@@ -51,7 +57,7 @@ object HttpClientFactory {
 
         install(DefaultRequest) {
             val esLogin = url.encodedPath.trim('/').endsWith("auth/login")
-            url("$BASE_URL/api/v1/")
+            url("$baseUrl/api/v1/")
             contentType(ContentType.Application.Json)
             if (!esLogin) {
                 almacen.leerToken()?.let { headers.append(HttpHeaders.Authorization, "Bearer $it") }

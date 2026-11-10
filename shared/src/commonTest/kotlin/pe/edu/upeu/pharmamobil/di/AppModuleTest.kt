@@ -8,6 +8,8 @@ import kotlinx.coroutines.test.setMain
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.koin.dsl.module
+import pe.edu.upeu.pharmamobil.domain.platform.Compartidor
 import pe.edu.upeu.pharmamobil.domain.repository.ClienteRepository
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.ListarClientesUseCase
@@ -40,7 +42,14 @@ class AppModuleTest {
     }
 
     private fun grafoCompleto(): Koin = startKoin {
-        modules(dataModule, domainModule, presentationModule, platformModule)
+        val capacidadesDePrueba = module {
+            single<Compartidor> {
+                object : Compartidor {
+                    override fun compartir(texto: String) = Unit
+                }
+            }
+        }
+        modules(dataModule, domainModule, presentationModule, platformModule, capacidadesDePrueba)
     }.koin
 
     @Test

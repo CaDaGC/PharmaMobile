@@ -34,7 +34,14 @@ import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteViewModel
 import pe.edu.upeu.pharmamobil.presentation.producto.ProductoViewModel
 
 val dataModule = module {
-    single { HttpClientFactory.create(engine = get(), almacen = get(), esDepuracion = true) }
+    single {
+        HttpClientFactory.create(
+            engine = get(),
+            almacen = get(),
+            esDepuracion = getProperty("pharmaDebug", true),
+            baseUrl = getProperty("pharmaBackendUrl", HttpClientFactory.BASE_URL)
+        )
+    }
     single { CategoriaApiService(get()) }
     single<AuthRepository> { AuthRepositorioRest(get(), get()) }
     single<ProductoRepository> { ProductoRepositorioEnMemoria() }

@@ -15,6 +15,7 @@ class MainApplication : Application() {
         super.onCreate()
 
         initKoin {
+            properties(mapOf("pharmaBackendUrl" to BuildConfig.BACKEND_URL, "pharmaDebug" to BuildConfig.DEBUG))
             androidLogger()
             androidContext(this@MainApplication)
         }

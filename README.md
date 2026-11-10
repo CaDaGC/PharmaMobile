@@ -1,5 +1,21 @@
 # PharmaMobil - Aplicación Móvil Multiplataforma (KMP)
 
+## Entrega Android de la sesión 14
+
+Equipo 3 · versión 1.0.0 (código 1) · pe.edu.upeu.pharmamobil.
+
+Para firmar, crea keystore.properties en la raíz del proyecto. Define storeFile con la ruta del almacén (usa barras / en Windows), storePassword, keyAlias y keyPassword. Guarda el almacén y una copia de respaldo fuera del repositorio. El archivo local está excluido de Git. Debug compila sin él.
+
+En PowerShell, con el JDK configurado, ejecuta:
+
+    .\gradlew.bat :androidApp:bundleRelease :androidApp:assembleRelease
+
+Por defecto la app busca PharmaSoft en el equipo anfitrión del emulador Android. Para un teléfono físico, agrega -PpharmaBackendUrl=https://TU-HOST al comando con el origen que responda desde el teléfono. Gradle incorpora esa URL al artefacto. Comprueba /api/health y usa una base de datos de prueba.
+
+Los resultados quedan en androidApp/build/outputs/bundle/release y androidApp/build/outputs/apk/release. Comprueba la firma del APK con apksigner verify --print-certs. Instala el APK transfiriéndolo al teléfono y abriéndolo desde Archivos, o usa adb install si el equipo está conectado a un ordenador con ADB. El AAB se entrega como paquete de distribución.
+
+Consulta [la matriz y el checklist](docs/SESION-14-ANDROID.md).
+
 ## Módulo de Categorías - Conectividad REST
 
 ### 1. Configuración de Conexión HTTP

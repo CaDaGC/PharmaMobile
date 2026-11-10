@@ -15,28 +15,28 @@ import pe.edu.upeu.pharmamobil.data.remote.dto.CategoriaResponseDto
 open class CategoriaApiService(private val client: HttpClient) {
 
     open suspend fun listar(): List<CategoriaResponseDto> {
-        return client.get("${HttpClientFactory.BASE_URL}/api/v1/categorias").body()
+        return client.get("categorias").body()
     }
 
     open suspend fun obtener(id: Long): CategoriaResponseDto {
-        return client.get("${HttpClientFactory.BASE_URL}/api/v1/categorias/$id").body()
+        return client.get("categorias/$id").body()
     }
 
     open suspend fun crear(request: CategoriaRequestDto): CategoriaResponseDto {
-        return client.post("${HttpClientFactory.BASE_URL}/api/v1/categorias") {
+        return client.post("categorias") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
     }
 
     open suspend fun actualizar(id: Long, request: CategoriaRequestDto): CategoriaResponseDto {
-        return client.put("${HttpClientFactory.BASE_URL}/api/v1/categorias/$id") {
+        return client.put("categorias/$id") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
     }
 
     open suspend fun eliminar(id: Long) {
-        client.delete("${HttpClientFactory.BASE_URL}/api/v1/categorias/$id")
+        client.delete("categorias/$id")
     }
 }
